@@ -1,0 +1,26 @@
+# Entorno virtual
+venv/
+.env/
+
+__pycache__/
+*.py[cod]
+*$py.class
+
+*.env
+*.venv
+.env/
+.venv/
+env/
+venv/
+ENV/
+
+*.sqlite3
+*.db
+
+.vscode/
+.idea/
+.DS_Store (macOS)
+
+*.egg-info/
+dist/
+build/
