@@ -24,3 +24,12 @@ ENV/
 *.egg-info/
 dist/
 build/
+
+
+staticfiles/
+media/
+static/
+
+# Archivos de migraciones innecesarias
+*/migrations/__pycache__/
+*/migrations/*.pyc
