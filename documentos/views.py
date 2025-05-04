@@ -4,7 +4,7 @@ from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
 from rest_framework import status
 from documentos.serializers import CrearDocumentoSerializer, DocumentoSerializer, DocumentoVersionSerializer
-from .models import Documento, DocumentoVersion, PermisoDocumento
+from .models import Area, Documento, DocumentoVersion, PermisoDocumento, TipoDocumento
 
 
 @api_view(["GET", "POST"])
@@ -119,3 +119,44 @@ def subir_nueva_version(request, documento_id):
         'detalle': 'Nueva versión subida',
         'version': version.version
     }, status=201)
+
+
+@api_view(['POST'])
+@permission_classes([IsAuthenticated])
+def crear_tipo_documento(request):
+    nombre = request.data.get('nombre')
+    if not nombre:
+        return Response({'detail': 'Falta el nombre'}, status=400)
+
+    tipo = TipoDocumento.objects.create(nombre=nombre)
+    return Response({'id': tipo.id, 'nombre': tipo.nombre}, status=201)
+
+
+@api_view(['POST'])
+@permission_classes([IsAuthenticated])
+def crear_area(request):
+    nombre = request.data.get('nombre')
+    if not nombre:
+        return Response({'detail': 'Falta el nombre'}, status=400)
+
+    area = Area.objects.create(nombre=nombre)
+    return Response({'id': area.id, 'nombre': area.nombre}, status=201)
+
+
+@api_view(['GET'])
+@permission_classes([IsAuthenticated])
+def resumen_documentos(request):
+    documentos = Documento.objects.prefetch_related(
+        'versiones', 'metadatos', 'permisos', 'tipo', 'area'
+    ).select_related('creado_por', 'tipo', 'area')
+
+    documentos_serializados = DocumentoSerializer(documentos, many=True).data
+
+    tipos = TipoDocumento.objects.values('id', 'nombre')
+    areas = Area.objects.values('id', 'nombre')
+
+    return Response({
+        'documentos': documentos_serializados,
+        'tipos_documento': list(tipos),
+        'areas': list(areas),
+    })

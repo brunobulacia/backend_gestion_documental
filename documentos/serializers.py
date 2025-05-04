@@ -1,17 +1,79 @@
 from rest_framework import serializers
-from .models import Documento, DocumentoVersion
+from .models import (
+    Documento,
+    DocumentoVersion,
+    TipoDocumento,
+    Area,
+    MetadatoPersonalizado,
+    PermisoDocumento,
+)
+from usuarios.models import Usuario
 
 
-class DocumentoSerializer(serializers.ModelSerializer):
+class UsuarioSerializer(serializers.ModelSerializer):
     class Meta:
-        model = Documento
-        fields = "__all__"
+        model = Usuario
+        fields = ["id", "username", "email", "rol"]
+
+
+class TipoDocumentoSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = TipoDocumento
+        fields = ["id", "nombre"]
+
+
+class AreaSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Area
+        fields = ["id", "nombre"]
 
 
 class DocumentoVersionSerializer(serializers.ModelSerializer):
+    subido_por = UsuarioSerializer()
+    documento_id = serializers.UUIDField(source="documento.id")
+
     class Meta:
         model = DocumentoVersion
-        fields = ["archivo", "comentarios"]
+        fields = [
+            "id",
+            "documento_id",
+            "archivo",
+            "version",
+            "subido_por",
+            "fecha_subida",
+            "comentarios",
+        ]
+
+
+class MetadatoPersonalizadoSerializer(serializers.ModelSerializer):
+    documento_id = serializers.UUIDField(source="documento.id")
+
+    class Meta:
+        model = MetadatoPersonalizado
+        fields = ["id", "documento_id", "clave", "valor"]
+
+
+class PermisoDocumentoSerializer(serializers.ModelSerializer):
+    documento_id = serializers.UUIDField(source="documento.id")
+    usuario = UsuarioSerializer()
+
+    class Meta:
+        model = PermisoDocumento
+        fields = [
+            "id",
+            "documento_id",
+            "usuario",
+            "puede_ver",
+            "puede_editar",
+            "puede_descargar",
+            "puede_eliminar",
+        ]
+
+
+class UsuarioSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Usuario
+        fields = ["id", "username", "email"]
 
 
 class CrearDocumentoSerializer(serializers.ModelSerializer):
@@ -47,3 +109,29 @@ class CrearDocumentoSerializer(serializers.ModelSerializer):
             comentarios=comentarios,
         )
         return documento
+
+
+class DocumentoSerializer(serializers.ModelSerializer):
+    tipo = TipoDocumentoSerializer()
+    area = AreaSerializer()
+    versiones = DocumentoVersionSerializer(many=True, read_only=True)
+    metadatos = MetadatoPersonalizadoSerializer(many=True, read_only=True)
+    permisos = PermisoDocumentoSerializer(many=True, read_only=True)
+    creado_por = UsuarioSerializer()
+
+    class Meta:
+        model = Documento
+        fields = [
+            "id",
+            "titulo",
+            "descripcion",
+            "tipo",
+            "area",
+            "es_publico",
+            "versiones",
+            "metadatos",
+            "permisos",
+            "fecha_creacion",
+            "fecha_modificacion",
+            "creado_por",
+        ]

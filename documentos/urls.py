@@ -1,5 +1,14 @@
 from django.urls import path
-from .views import documentos_view, historial_versiones, asignar_permiso, subir_nueva_version
+
+from .views import (
+    documentos_view,
+    historial_versiones,
+    asignar_permiso,
+    subir_nueva_version,
+    crear_area,
+    crear_tipo_documento,
+    resumen_documentos,
+)
 
 urlpatterns = [
     path("", documentos_view, name="documentos_view"),
@@ -18,4 +27,7 @@ urlpatterns = [
         subir_nueva_version,
         name="subir-nueva-version",
     ),
+    path("tipos/", crear_tipo_documento, name="crear-tipo"),
+    path("areas/", crear_area, name="crear-area"),
+    path("resumen/", resumen_documentos, name="resumen-documentos"),
 ]
