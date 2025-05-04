@@ -2,7 +2,9 @@ from rest_framework.decorators import api_view, permission_classes
 from rest_framework.permissions import IsAuthenticated, AllowAny
 from rest_framework.response import Response
 from rest_framework import status
-from .serializers import RegistroUsuarioSerializer, LoginSerializer
+
+from usuarios.models import Usuario
+from .serializers import RegistroUsuarioSerializer, LoginSerializer, UsuarioSerializer
 from rest_framework_simplejwt.tokens import RefreshToken
 
 
@@ -53,3 +55,10 @@ def registrar_usuario(request):
             status=status.HTTP_201_CREATED,
         )
     return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+
+@api_view(["GET"])
+@permission_classes([IsAuthenticated])
+def get_users(request):
+    users = Usuario.objects.all()
+    serializer = UsuarioSerializer(users, many=True)
+    return Response(serializer.data)

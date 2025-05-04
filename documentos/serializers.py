@@ -1,5 +1,6 @@
 from rest_framework import serializers
 from .models import (
+    ComentarioDocumento,
     Documento,
     DocumentoVersion,
     TipoDocumento,
@@ -76,7 +77,7 @@ class UsuarioSerializer(serializers.ModelSerializer):
         fields = ["id", "username", "email"]
 
 
-class CrearDocumentoSerializer(serializers.ModelSerializer):
+class CrearDocumentoSerializer(serializers.ModelSerializer): 
     archivo = serializers.FileField(write_only=True)
     comentarios = serializers.CharField(
         write_only=True, required=False, allow_blank=True
@@ -96,18 +97,25 @@ class CrearDocumentoSerializer(serializers.ModelSerializer):
 
     def create(self, validated_data):
         archivo = validated_data.pop("archivo")
-        comentarios = validated_data.pop("comentarios", "")
+        comentario_texto = validated_data.pop("comentarios", "").strip()
 
         user = self.context["request"].user
         documento = Documento.objects.create(creado_por=user, **validated_data)
 
-        DocumentoVersion.objects.create(
+        version = DocumentoVersion.objects.create(
             documento=documento,
             archivo=archivo,
             version=1,
             subido_por=user,
-            comentarios=comentarios,
         )
+
+        if comentario_texto:
+            ComentarioDocumento.objects.create(
+                version=version,
+                autor=user,
+                comentario=comentario_texto
+            )
+
         return documento
 
 

@@ -25,6 +25,9 @@ class Usuario(AbstractUser):
     email = models.EmailField(unique=True)
     rol = models.ForeignKey(Rol, on_delete=models.SET_NULL, null=True)
 
+class RolUsuarios(models.Model):
+    rol = models.ForeignKey(Rol, on_delete=models.CASCADE)
+    usuario = models.ForeignKey(Usuario, on_delete=models.CASCADE)
 
 class Cliente(models.Model):
     usuario = models.OneToOneField(Usuario, on_delete=models.CASCADE)

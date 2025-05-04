@@ -10,13 +10,11 @@ class TipoDocumento(models.Model):
     def __str__(self):
         return self.nombre
 
-
 class Area(models.Model):
     nombre = models.CharField(max_length=100)
 
     def __str__(self):
         return self.nombre
-
 
 class Documento(models.Model):
     id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
@@ -56,7 +54,6 @@ class DocumentoVersion(models.Model):
         settings.AUTH_USER_MODEL, on_delete=models.SET_NULL, null=True
     )
     fecha_subida = models.DateTimeField(auto_now_add=True)
-    comentarios = models.TextField(blank=True)
 
     class Meta:
         unique_together = ("documento", "version")
@@ -64,6 +61,20 @@ class DocumentoVersion(models.Model):
 
     def __str__(self):
         return f"{self.documento.titulo} - v{self.version}"
+
+
+class ComentarioDocumento(models.Model):
+    version = models.ForeignKey(
+        DocumentoVersion, on_delete=models.CASCADE, related_name="comentarios"
+    )
+    autor = models.ForeignKey(
+        settings.AUTH_USER_MODEL, on_delete=models.SET_NULL, null=True
+    )
+    comentario = models.TextField()
+    fecha = models.DateTimeField(auto_now_add=True)
+
+    def __str__(self):
+        return f"Comentario de {self.autor} en {self.version}"
 
 
 class MetadatoPersonalizado(models.Model):
@@ -84,6 +95,6 @@ class PermisoDocumento(models.Model):
     usuario = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE)
     puede_ver = models.BooleanField(default=True)
     puede_editar = models.BooleanField(default=False)
-
+    puede_comentar = models.BooleanField(default=False)
     class Meta:
         unique_together = ("documento", "usuario")

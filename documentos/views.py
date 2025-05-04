@@ -5,7 +5,7 @@ from rest_framework.response import Response
 from rest_framework import status
 from documentos.serializers import CrearDocumentoSerializer, DocumentoSerializer, DocumentoVersionSerializer
 from .models import Area, Documento, DocumentoVersion, PermisoDocumento, TipoDocumento
-
+from django.db.models import Q
 
 @api_view(["GET", "POST"])
 @permission_classes([IsAuthenticated])
@@ -84,6 +84,7 @@ def asignar_permiso(request, documento_id):
         defaults={
             "puede_ver": data.get("puede_ver", True),
             "puede_editar": data.get("puede_editar", False),
+            "puede_comentar": data.get("puede_comentar", False),
         }
     )
     return Response({"detalle": "Permiso asignado correctamente"})
@@ -146,9 +147,20 @@ def crear_area(request):
 @api_view(['GET'])
 @permission_classes([IsAuthenticated])
 def resumen_documentos(request):
-    documentos = Documento.objects.prefetch_related(
+    usuario = request.user
+
+    documentos_con_permiso = Documento.objects.filter(
+        permisos__usuario=usuario,
+        permisos__puede_ver=True
+    ).distinct()
+
+    documentos = Documento.objects.filter(
+        Q(id__in=documentos_con_permiso) |
+        Q(es_publico=True) |
+        Q(creado_por=usuario)
+    ).prefetch_related(
         'versiones', 'metadatos', 'permisos', 'tipo', 'area'
-    ).select_related('creado_por', 'tipo', 'area')
+    ).select_related('creado_por', 'tipo', 'area').distinct()
 
     documentos_serializados = DocumentoSerializer(documentos, many=True).data
 
@@ -160,3 +172,4 @@ def resumen_documentos(request):
         'tipos_documento': list(tipos),
         'areas': list(areas),
     })
+
