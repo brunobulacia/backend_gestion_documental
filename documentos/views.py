@@ -3,8 +3,8 @@ from rest_framework.decorators import api_view, permission_classes
 from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
 from rest_framework import status
-from documentos.serializers import CrearDocumentoSerializer, DocumentoSerializer
-from .models import Documento
+from documentos.serializers import CrearDocumentoSerializer, DocumentoSerializer, DocumentoVersionSerializer
+from .models import Documento, DocumentoVersion, PermisoDocumento
 
 
 @api_view(["GET", "POST"])
@@ -54,3 +54,68 @@ def listar_documentos(request):
 
     serializer = DocumentoSerializer(documentos, many=True)
     return Response(serializer.data)
+
+
+@api_view(['GET'])
+@permission_classes([IsAuthenticated])
+def historial_versiones(request, documento_id):
+    try:
+        documento = Documento.objects.get(id=documento_id)
+    except Documento.DoesNotExist:
+        return Response({'detail': 'Documento no encontrado'}, status=404)
+
+    versiones = documento.versiones.all()
+    serializer = DocumentoVersionSerializer(versiones, many=True)
+    return Response(serializer.data)
+
+
+@api_view(['POST'])
+@permission_classes([IsAuthenticated])
+def asignar_permiso(request, documento_id):
+    try:
+        documento = Documento.objects.get(id=documento_id)
+    except Documento.DoesNotExist:
+        return Response({'detail': 'Documento no encontrado'}, status=404)
+
+    data = request.data
+    permiso, created = PermisoDocumento.objects.update_or_create(
+        documento=documento,
+        usuario_id=data.get("usuario_id"),
+        defaults={
+            "puede_ver": data.get("puede_ver", True),
+            "puede_editar": data.get("puede_editar", False),
+        }
+    )
+    return Response({"detalle": "Permiso asignado correctamente"})
+
+
+@api_view(['POST'])
+@permission_classes([IsAuthenticated])
+def subir_nueva_version(request, documento_id):
+    try:
+        documento = Documento.objects.get(id=documento_id)
+    except Documento.DoesNotExist:
+        return Response({'detail': 'Documento no encontrado'}, status=404)
+
+    archivo = request.FILES.get('archivo')
+    comentarios = request.data.get('comentarios', '')
+
+    if not archivo:
+        return Response({'detail': 'Se requiere un archivo'}, status=400)
+
+    # Obtener la última versión
+    ultima_version = documento.versiones.first()
+    nueva_version = 1 if not ultima_version else ultima_version.version + 1
+
+    version = DocumentoVersion.objects.create(
+        documento=documento,
+        archivo=archivo,
+        version=nueva_version,
+        subido_por=request.user,
+        comentarios=comentarios
+    )
+
+    return Response({
+        'detalle': 'Nueva versión subida',
+        'version': version.version
+    }, status=201)
