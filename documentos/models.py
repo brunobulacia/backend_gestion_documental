@@ -1,3 +1,5 @@
+import uuid
+import os
 from django.db import models
 from django.conf import settings
 
@@ -17,7 +19,7 @@ class Area(models.Model):
 
 
 class Documento(models.Model):
-    id = models.UUIDField(primary_key=True)
+    id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
     titulo = models.CharField(max_length=255)
     descripcion = models.TextField(blank=True)
     tipo = models.ForeignKey(TipoDocumento, on_delete=models.SET_NULL, null=True)
@@ -35,11 +37,20 @@ class Documento(models.Model):
         return self.titulo
 
 
+def ruta_documento_personalizada(instance, filename):
+    area = instance.documento.area.nombre if instance.documento.area else "sin_area"
+    tipo = instance.documento.tipo.nombre if instance.documento.tipo else "sin_tipo"
+
+    area = area.replace(" ", "_").lower()
+    tipo = tipo.replace(" ", "_").lower()
+    return os.path.join("documentos", area, tipo, filename)
+
+
 class DocumentoVersion(models.Model):
     documento = models.ForeignKey(
         Documento, on_delete=models.CASCADE, related_name="versiones"
     )
-    archivo = models.FileField(upload_to="documentos/")
+    archivo = models.FileField(upload_to=ruta_documento_personalizada)
     version = models.PositiveIntegerField()
     subido_por = models.ForeignKey(
         settings.AUTH_USER_MODEL, on_delete=models.SET_NULL, null=True
