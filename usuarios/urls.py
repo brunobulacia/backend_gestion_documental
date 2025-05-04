@@ -3,6 +3,6 @@ from .views import perfil_usuario, registrar_usuario, login_usuario
 
 urlpatterns = [
     path('perfil/', perfil_usuario, name='perfil-usuario'),
-    path('registro/', registrar_usuario, name='registro-usuario'),
+    path('register/', registrar_usuario, name='registro-usuario'),
     path('login/', login_usuario, name='login'),
 ]
