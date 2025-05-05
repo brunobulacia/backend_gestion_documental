@@ -2,15 +2,56 @@ from rest_framework.decorators import api_view, permission_classes
 from rest_framework.permissions import IsAuthenticated, AllowAny
 from rest_framework.response import Response
 from rest_framework import status
+from rest_framework import viewsets
 
-from usuarios.models import Usuario
-from .serializers import RegistroUsuarioSerializer, LoginSerializer, UsuarioSerializer
+from usuarios.models import Usuario, Rol, Permiso, Recepcionista, RolPermisos, RolUsuarios, Cliente
+from .serializers import RegistroUsuarioSerializer, LoginSerializer, UsuarioSerializer, PermisoSerializer, ClienteSerializer, RecepcionistaSerializer, RolSerializer, RolUsuariosSerializer
 from rest_framework_simplejwt.tokens import RefreshToken
+from drf_yasg.utils import swagger_auto_schema
+from drf_yasg import openapi
+
+
+
+class PermisoViewSet(viewsets.ModelViewSet):
+    queryset = Permiso.objects.all()
+    serializer_class = PermisoSerializer
+
+class RolViewSet(viewsets.ModelViewSet):
+    queryset = Rol.objects.all()
+    serializer_class = RolSerializer
+
+class UsuarioViewSet(viewsets.ModelViewSet):
+    queryset = Usuario.objects.all()
+    serializer_class = UsuarioSerializer
+
+class RecepcionistaViewSet(viewsets.ModelViewSet):
+    queryset = Recepcionista.objects.all()
+    serializer_class = RecepcionistaSerializer
+
+class ClienteViewSet(viewsets.ModelViewSet):
+    queryset = Cliente.objects.all()
+    serializer_class = ClienteSerializer
+
+class RolUsuariosViewSet(viewsets.ModelViewSet):
+    queryset = RolUsuarios.objects.all()
+    serializer_class = RolUsuariosSerializer
 
 
 @api_view(["GET"])
 @permission_classes([IsAuthenticated])
 def perfil_usuario(request):
+
+    """
+    Devuelve el perfil del usuario autenticado.
+
+    Returns:
+    {
+        "id": int,
+        "username": str,
+        "email": str,
+        "rol": str (optional)
+    }
+    """
     user = request.user
     return Response(
         {
@@ -31,6 +72,16 @@ def login_usuario(request):
     return Response(serializer.errors, status=status.HTTP_401_UNAUTHORIZED)
 
 
+@swagger_auto_schema(
+    method='post',  # lowercase 'post' instead of 'POST'
+    request_body=RegistroUsuarioSerializer,
+    responses={
+        201: openapi.Response('User registered successfully', RegistroUsuarioSerializer),
+        400: 'Bad Request'
+    },
+    operation_description="Registra un nuevo usuario",
+    tags=["usuarios"],
+)
 @api_view(["POST"])
 @permission_classes([AllowAny])
 def registrar_usuario(request):
