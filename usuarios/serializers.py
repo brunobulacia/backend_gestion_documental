@@ -47,7 +47,10 @@ class RegistroUsuarioSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = Usuario
-        fields = ("id", "username", "email", "password", "password2", "rol")
+        fields = ["username", "email", "password", "password2", "rol"]
+        extra_kwargs = {
+            "rol": {"required": False, "allow_null": True},
+        }
 
     def validate(self, data):
         if data["password"] != data["password2"]:
@@ -57,12 +60,17 @@ class RegistroUsuarioSerializer(serializers.ModelSerializer):
         return data
 
     def create(self, validated_data):
+        rol = validated_data.pop("rol", None)
+        if rol is None:
+            from usuarios.models import Rol 
+            rol = Rol.objects.get(nombre__iexact="colaborador")
+
         validated_data.pop("password2")
         user = Usuario.objects.create_user(
             username=validated_data["username"],
             email=validated_data["email"],
             password=validated_data["password"],
-            rol=validated_data.get("rol"),
+            rol=rol,
         )
         return user
 
