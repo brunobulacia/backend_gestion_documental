@@ -6,6 +6,9 @@ from rest_framework import status
 from documentos.serializers import CrearDocumentoSerializer, DocumentoSerializer, DocumentoVersionSerializer
 from .models import Area, Documento, DocumentoVersion, PermisoDocumento, TipoDocumento
 from django.db.models import Q
+from django.http import FileResponse, Http404
+from django.shortcuts import get_object_or_404
+import os
 
 @api_view(["GET", "POST"])
 @permission_classes([IsAuthenticated])
@@ -173,3 +176,19 @@ def resumen_documentos(request):
         'areas': list(areas),
     })
 
+
+def descargar_version(request, version_id):
+    version = get_object_or_404(DocumentoVersion, id=version_id)
+
+    if not version.archivo:
+        raise Http404("El archivo no está disponible.")
+
+    # Aquí puedes validar permisos si es necesario, por ejemplo:
+    # if not request.user.has_perm("ver_documento", version.documento):
+    #     raise PermissionDenied()
+
+    return FileResponse(
+        version.archivo.open("rb"),
+        as_attachment=True,
+        filename=os.path.basename(version.archivo.name)
+    )
