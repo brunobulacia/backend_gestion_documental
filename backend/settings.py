@@ -42,6 +42,7 @@ INSTALLED_APPS = [
     "usuarios",
     "documentos",
     "corsheaders",
+    "drf_yasg"
 ]
 
 MIDDLEWARE = [
