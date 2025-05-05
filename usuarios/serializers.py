@@ -1,7 +1,38 @@
 from rest_framework import serializers
-from .models import Usuario
+from .models import Usuario, Rol, Recepcionista, Cliente, Permiso, RolUsuarios
 from django.contrib.auth.password_validation import validate_password
 from rest_framework_simplejwt.serializers import TokenObtainPairSerializer
+
+
+class RolSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Rol
+        fields = ["id", "nombre"]
+
+
+class RolUsuariosSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = RolUsuarios
+        fields = ["id", "rol", "usuario"]
+
+
+
+class PermisoSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Permiso
+        fields = ["id", "nombre"]
+
+
+class RecepcionistaSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Recepcionista
+        fields = ["id", "usuario"]
+
+
+class ClienteSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Cliente
+        fields = '__all__'
 
 
 class UsuarioSerializer(serializers.ModelSerializer):
