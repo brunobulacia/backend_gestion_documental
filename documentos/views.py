@@ -102,7 +102,6 @@ def subir_nueva_version(request, documento_id):
         return Response({'detail': 'Documento no encontrado'}, status=404)
 
     archivo = request.FILES.get('archivo')
-    comentarios = request.data.get('comentarios', '')
 
     if not archivo:
         return Response({'detail': 'Se requiere un archivo'}, status=400)
@@ -115,8 +114,7 @@ def subir_nueva_version(request, documento_id):
         documento=documento,
         archivo=archivo,
         version=nueva_version,
-        subido_por=request.user,
-        comentarios=comentarios
+        subido_por=request.user
     )
 
     return Response({
