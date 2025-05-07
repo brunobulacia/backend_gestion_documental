@@ -41,6 +41,7 @@ INSTALLED_APPS = [
     "rest_framework",
     "usuarios",
     "documentos",
+    "workflows",
     "corsheaders",
     "drf_yasg"
 ]
