@@ -143,3 +143,10 @@ class DocumentoSerializer(serializers.ModelSerializer):
             "fecha_modificacion",
             "creado_por",
         ]
+
+class FiltroMetadatosSerializer(serializers.Serializer):
+    tipo_documento = serializers.CharField(required=False)
+    area = serializers.CharField(required=False)
+    fecha_desde = serializers.DateField(required=False)
+    fecha_hasta = serializers.DateField(required=False)
+    metadatos = serializers.JSONField(required=False)  # Ej: {"clave1": "valor1", "clave2": "valor2"}
