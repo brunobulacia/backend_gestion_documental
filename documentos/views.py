@@ -6,6 +6,9 @@ from rest_framework import status
 from documentos.serializers import CrearDocumentoSerializer, DocumentoSerializer, DocumentoVersionSerializer, FiltroMetadatosSerializer
 from .models import Area, Documento, DocumentoVersion, PermisoDocumento, TipoDocumento
 from django.db.models import Q
+from django.http import FileResponse, Http404
+from django.shortcuts import get_object_or_404
+import os
 
 @api_view(["GET", "POST"])
 @permission_classes([IsAuthenticated])
@@ -99,7 +102,6 @@ def subir_nueva_version(request, documento_id):
         return Response({'detail': 'Documento no encontrado'}, status=404)
 
     archivo = request.FILES.get('archivo')
-    comentarios = request.data.get('comentarios', '')
 
     if not archivo:
         return Response({'detail': 'Se requiere un archivo'}, status=400)
@@ -112,8 +114,7 @@ def subir_nueva_version(request, documento_id):
         documento=documento,
         archivo=archivo,
         version=nueva_version,
-        subido_por=request.user,
-        comentarios=comentarios
+        subido_por=request.user
     )
 
     return Response({
@@ -205,3 +206,19 @@ def buscar_documentos(request):
     # Optimización de consultas
     documentos = documentos.prefetch_related('metadatos', 'versiones').select_related('tipo', 'area')
     return Response(DocumentoSerializer(documentos, many=True).data)
+
+def descargar_version(request, version_id):
+    version = get_object_or_404(DocumentoVersion, id=version_id)
+
+    if not version.archivo:
+        raise Http404("El archivo no está disponible.")
+
+    # Aquí puedes validar permisos si es necesario, por ejemplo:
+    # if not request.user.has_perm("ver_documento", version.documento):
+    #     raise PermissionDenied()
+
+    return FileResponse(
+        version.archivo.open("rb"),
+        as_attachment=True,
+        filename=os.path.basename(version.archivo.name)
+    )
