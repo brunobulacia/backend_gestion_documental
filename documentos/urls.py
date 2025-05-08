@@ -32,9 +32,6 @@ urlpatterns = [
     path("tipos/", crear_tipo_documento, name="crear-tipo"),
     path("areas/", crear_area, name="crear-area"),
     path("resumen/", resumen_documentos, name="resumen-documentos"),
-<<<<<<< HEAD
     path("buscar/", buscar_documentos, name="buscar-documentos"),
-=======
     path("descargar/<int:version_id>/", descargar_version, name="descargar-version"),
->>>>>>> main
 ]
