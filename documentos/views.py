@@ -3,7 +3,7 @@ from rest_framework.decorators import api_view, permission_classes
 from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
 from rest_framework import status
-from documentos.serializers import CrearDocumentoSerializer, DocumentoSerializer, DocumentoVersionSerializer
+from documentos.serializers import CrearDocumentoSerializer, DocumentoSerializer, DocumentoVersionSerializer, FiltroMetadatosSerializer
 from .models import Area, Documento, DocumentoVersion, PermisoDocumento, TipoDocumento
 from django.db.models import Q
 from django.http import FileResponse, Http404
@@ -174,6 +174,38 @@ def resumen_documentos(request):
         'areas': list(areas),
     })
 
+@api_view(['GET'])
+@permission_classes([IsAuthenticated])
+def buscar_documentos(request):
+    serializer = FiltroMetadatosSerializer(data=request.query_params)
+    if not serializer.is_valid():
+        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+
+    # Filtros básicos (tipo, área, fecha)
+    documentos = Documento.objects.all()
+    if serializer.validated_data.get('tipo_documento'):
+        documentos = documentos.filter(tipo__nombre=serializer.validated_data['tipo_documento'])
+    if serializer.validated_data.get('area'):
+        documentos = documentos.filter(area__nombre=serializer.validated_data['area'])
+    if serializer.validated_data.get('fecha_desde') and serializer.validated_data.get('fecha_hasta'):
+        documentos = documentos.filter(
+            fecha_creacion__date__range=(
+                serializer.validated_data['fecha_desde'],
+                serializer.validated_data['fecha_hasta']
+            )
+        )
+
+    # Filtros por metadatos (si existen)
+    if serializer.validated_data.get('metadatos'):
+        for clave, valor in serializer.validated_data['metadatos'].items():
+            documentos = documentos.filter(
+                metadatos__clave=clave,
+                metadatos__valor=valor
+            )
+
+    # Optimización de consultas
+    documentos = documentos.prefetch_related('metadatos', 'versiones').select_related('tipo', 'area')
+    return Response(DocumentoSerializer(documentos, many=True).data)
 
 def descargar_version(request, version_id):
     version = get_object_or_404(DocumentoVersion, id=version_id)

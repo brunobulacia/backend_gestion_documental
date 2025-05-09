@@ -10,6 +10,7 @@ from .views import (
     crear_tipo_documento,
     resumen_documentos,
 )
+from .views import buscar_documentos
 
 urlpatterns = [
     path("", documentos_view, name="documentos_view"),
@@ -31,5 +32,6 @@ urlpatterns = [
     path("tipos/", crear_tipo_documento, name="crear-tipo"),
     path("areas/", crear_area, name="crear-area"),
     path("resumen/", resumen_documentos, name="resumen-documentos"),
+    path("buscar/", buscar_documentos, name="buscar-documentos"),
     path("descargar/<int:version_id>/", descargar_version, name="descargar-version"),
 ]

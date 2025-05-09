@@ -77,7 +77,7 @@ class ComentarioDocumento(models.Model):
         return f"Comentario de {self.autor} en {self.version}"
 
 
-class MetadatoPersonalizado(models.Model):
+""" class MetadatoPersonalizado(models.Model):
     documento = models.ForeignKey(
         Documento, on_delete=models.CASCADE, related_name="metadatos"
     )
@@ -85,7 +85,7 @@ class MetadatoPersonalizado(models.Model):
     valor = models.CharField(max_length=255)
 
     def __str__(self):
-        return f"{self.clave}: {self.valor}"
+        return f"{self.clave}: {self.valor}" """
 
 
 class PermisoDocumento(models.Model):
@@ -98,3 +98,22 @@ class PermisoDocumento(models.Model):
     puede_comentar = models.BooleanField(default=False)
     class Meta:
         unique_together = ("documento", "usuario")
+
+class MetadatoPersonalizado(models.Model):
+    TIPO_DATO_CHOICES = [
+        ('texto', 'Texto'),
+        ('fecha', 'Fecha'),
+        ('opcion', 'Opción múltiple'),
+    ]
+
+    documento = models.ForeignKey(
+        Documento, on_delete=models.CASCADE, related_name="metadatos"
+    )
+    clave = models.CharField(max_length=100)
+    valor = models.CharField(max_length=255)  # Almacena el valor en texto (para búsquedas)
+    tipo_dato = models.CharField(max_length=10, choices=TIPO_DATO_CHOICES, default='texto')
+    opciones = models.JSONField(blank=True, null=True)  # Solo para tipo 'opcion' (ej: ["Confidencial", "Público"])
+
+    def __str__(self):
+        return f"{self.clave}: {self.valor} ({self.tipo_dato})"
+
