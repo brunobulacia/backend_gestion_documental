@@ -20,7 +20,7 @@ class ElementoFlujo(models.Model):
         ('TAREA', 'Tarea manual'),
         ('DECISION', 'Decisión si/no'),
     ]
-
+    bpmnId = models.CharField(max_length=255, unique=True, default="")
     flujo = models.ForeignKey(FlujoTrabajo, on_delete=models.CASCADE, related_name="elementos")
     nombre = models.CharField(max_length=255)
     tipo = models.CharField(max_length=10, choices=TIPO_CHOICES)
@@ -32,7 +32,10 @@ class ElementoFlujo(models.Model):
         "usuarios.Rol", null=True, blank=True, on_delete=models.SET_NULL
     )
     condicion = models.CharField(max_length=255, blank=True)  # para decisiones
-
+    x = models.PositiveIntegerField(null=True, blank=True)
+    y = models.PositiveIntegerField(null=True, blank=True)
+    width = models.PositiveIntegerField(null=True, blank=True)
+    height = models.PositiveIntegerField(null=True, blank=True)
     def __str__(self):
         return f"{self.nombre} ({self.tipo})"
 
@@ -41,6 +44,6 @@ class TransicionFlujo(models.Model):
     origen = models.ForeignKey(ElementoFlujo, on_delete=models.CASCADE, related_name="transiciones_salida")
     destino = models.ForeignKey(ElementoFlujo, on_delete=models.CASCADE, related_name="transiciones_entrada")
     condicion = models.CharField(max_length=255, blank=True)  # para ramas si/no, por ejemplo
-
+    bpmnId = models.CharField(max_length=255, unique=True, default="")
     def __str__(self):
         return f"{self.origen} → {self.destino}"

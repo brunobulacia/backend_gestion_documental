@@ -97,15 +97,12 @@ WSGI_APPLICATION = "backend.wsgi.application"
 
 DATABASES = {
     'default': {
-        'ENGINE': config('DB_ENGINE'),
-        'NAME': config('DB_NAME'),
-        'USER': config('DB_USER'),
-        'PASSWORD': config('DB_PASSWORD'),
-        'HOST': config('DB_HOST'),
-        'PORT': config('DB_PORT'),
-        'OPTIONS': {
-            'sslmode': config('DB_SSLMODE'),
-        }
+        'ENGINE': 'django.db.backends.postgresql',
+        "NAME": "gestion_documental",
+        "USER": "postgres",
+        "PASSWORD": "GRUPO9SI2",
+        "HOST": "db-gestion-documental-si2.c1gcgqmkyd8a.sa-east-1.rds.amazonaws.com",
+        "PORT": "5432"
     }
 }
 
