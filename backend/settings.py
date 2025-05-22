@@ -42,7 +42,8 @@ INSTALLED_APPS = [
     "usuarios",
     "documentos",
     "corsheaders",
-    "drf_yasg"
+    "drf_yasg",
+    'django_filters',
 ]
 
 MIDDLEWARE = [
@@ -147,6 +148,9 @@ REST_FRAMEWORK = {
     "DEFAULT_AUTHENTICATION_CLASSES": (
         "rest_framework_simplejwt.authentication.JWTAuthentication",
     ),
+    'DEFAULT_FILTER_BACKENDS': [
+        'django_filters.rest_framework.DjangoFilterBackend'
+    ],
 }
 
 SIMPLE_JWT = {
