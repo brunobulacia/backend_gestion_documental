@@ -47,3 +47,8 @@ class TransicionFlujo(models.Model):
     bpmnId = models.CharField(max_length=255, unique=True, default="")
     def __str__(self):
         return f"{self.origen} → {self.destino}"
+
+class Waypoint(models.Model):
+    transicion = models.ForeignKey(TransicionFlujo, on_delete=models.CASCADE, related_name="waypoints")
+    x = models.PositiveIntegerField(null=True, blank=True)
+    y = models.PositiveIntegerField(null=True, blank=True)

@@ -3,7 +3,7 @@ from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
 from rest_framework import status
 from django.shortcuts import get_object_or_404
-from .models import FlujoTrabajo, ElementoFlujo, TransicionFlujo
+from .models import FlujoTrabajo, ElementoFlujo, TransicionFlujo, Waypoint
 from documentos.models import TipoDocumento
 from .serializers import (
     FlujoTrabajoSerializer,
@@ -13,6 +13,8 @@ from .serializers import (
 from .utils import validar_estructura_flujo
 from django.db import transaction
 from django.db.models import Q
+from usuarios.models import Rol, Usuario
+
 
 @api_view(["GET", "POST"])
 @permission_classes([IsAuthenticated])
@@ -170,6 +172,23 @@ def actualizar_flujo(request):
             )
 
         elemento_data["flujo"] = flujo
+
+        if "asignado_a_usuario" in elemento_data:
+            if elemento_data["asignado_a_usuario"] is not None:
+                elemento_data["asignado_a_usuario"] = get_object_or_404(
+                    Usuario, pk=elemento_data["asignado_a_usuario"]
+                )
+            else:
+                elemento_data["asignado_a_usuario"] = None
+
+        if "asignado_a_rol" in elemento_data:
+            if elemento_data["asignado_a_rol"] is not None:
+                elemento_data["asignado_a_rol"] = get_object_or_404(
+                    Rol, pk=elemento_data["asignado_a_rol"]
+                )
+            else:
+                elemento_data["asignado_a_rol"] = None
+
         bpmn_ids_elementos_actuales.append(elemento_data["bpmnId"])
 
         ElementoFlujo.objects.update_or_create(
@@ -190,6 +209,8 @@ def actualizar_flujo(request):
                 status=status.HTTP_400_BAD_REQUEST,
             )
 
+        waypoints_data = transicion_data.pop("waypoints", [])  # Extraer waypoints
+
         origen_id = transicion_data.pop("origen")
         destino_id = transicion_data.pop("destino")
 
@@ -204,13 +225,20 @@ def actualizar_flujo(request):
 
         transicion_data["origen"] = origen
         transicion_data["destino"] = destino
-        transicion_data["flujo"] = flujo
 
-        bpmn_ids_transiciones_actuales.append(transicion_data["bpmnId"])
+        bpmn_id = transicion_data["bpmnId"]
+        bpmn_ids_transiciones_actuales.append(bpmn_id)
 
-        TransicionFlujo.objects.update_or_create(
-            bpmnId=transicion_data["bpmnId"], defaults=transicion_data
+        transicion, _ = TransicionFlujo.objects.update_or_create(
+            bpmnId=bpmn_id, defaults=transicion_data
         )
+
+        # Eliminar waypoints existentes de esta transición
+        transicion.waypoints.all().delete()
+
+        # Crear nuevos waypoints
+        for wp in waypoints_data:
+            Waypoint.objects.create(transicion=transicion, x=wp.get("x"), y=wp.get("y"))
 
     # Eliminar transiciones que ya no están en el JSON
     TransicionFlujo.objects.filter(
@@ -218,3 +246,4 @@ def actualizar_flujo(request):
     ).exclude(bpmnId__in=bpmn_ids_transiciones_actuales).delete()
 
     return Response({"mensaje": "Flujo actualizado correctamente"})
+

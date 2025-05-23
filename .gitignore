@@ -33,3 +33,6 @@ static/
 # Archivos de migraciones innecesarias
 */migrations/__pycache__/
 */migrations/*.pyc
+
+Dockerfile
+.dockerignore
