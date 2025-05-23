@@ -319,25 +319,7 @@ def eliminar_comentario(request, comentario_id):
     comentario.delete()
     return Response({'detalle': 'Comentario eliminado'}, status=204)
 
-"""
-Ejemplos de uso de los endpoints de gestión de comentarios:
-
-GET /documentos/versiones/<version_id>/comentarios/
-🔍 Listar todos los comentarios asociados a una versión de documento.
-Ejemplo: /documentos/versiones/1a2b3c4d-5678-90ab-cdef-1234567890ab/comentarios/
-
-POST /documentos/versiones/<version_id>/comentarios/crear/
-✍️ Crear un nuevo comentario para una versión de documento.
-Requiere autenticación. El cuerpo del request (JSON) debe incluir al menos:
-{
-     "contenido": "Comentario de prueba",
-     "visibilidad": "publico"  # o puede ser un rol_id si es restringido
-}
-
-DELETE /documentos/comentarios/<comentario_id>/eliminar/
-🗑️ Eliminar un comentario. Solo el autor o un staff/admin puede borrarlo.
-Ejemplo: /documentos/comentarios/42/eliminar/
-"""@api_view(['GET'])
+@api_view(['GET'])
 @permission_classes([IsAuthenticated])
 def buscar_documentos(request):
     serializer = FiltroMetadatosSerializer(data=request.query_params)
