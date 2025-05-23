@@ -1,4 +1,5 @@
 from django.urls import path
+from rest_framework.routers import DefaultRouter
 
 from .views import (
     descargar_version,
@@ -9,8 +10,16 @@ from .views import (
     crear_area,
     crear_tipo_documento,
     resumen_documentos,
+    descargar_documento,
+    listar_comentarios_version,
+    crear_comentario,
+    eliminar_comentario,
+    DocumentoViewSet
 )
 from .views import buscar_documentos
+
+router = DefaultRouter()
+router.register(r'documentos', DocumentoViewSet, basename='documento')
 
 urlpatterns = [
     path("", documentos_view, name="documentos_view"),
@@ -29,9 +38,16 @@ urlpatterns = [
         subir_nueva_version,
         name="subir-nueva-version",
     ),
+    path('version/<uuid:version_id>/descargar/', descargar_documento, name='descargar-documento'),
+    
     path("tipos/", crear_tipo_documento, name="crear-tipo"),
     path("areas/", crear_area, name="crear-area"),
     path("resumen/", resumen_documentos, name="resumen-documentos"),
     path("buscar/", buscar_documentos, name="buscar-documentos"),
     path("descargar/<int:version_id>/", descargar_version, name="descargar-version"),
+    path('versiones/<uuid:version_id>/comentarios/', listar_comentarios_version),
+    path('versiones/<uuid:version_id>/comentarios/crear/', crear_comentario),
+    path('comentarios/<int:comentario_id>/eliminar/', eliminar_comentario),
 ]
+
+urlpatterns += router.urls
