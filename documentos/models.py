@@ -73,6 +73,9 @@ class ComentarioDocumento(models.Model):
     comentario = models.TextField()
     fecha = models.DateTimeField(auto_now_add=True)
 
+    es_publico = models.BooleanField(default=False)
+    rol = models.ForeignKey('usuarios.Rol', on_delete=models.SET_NULL, null=True, blank=True)
+
     def __str__(self):
         return f"Comentario de {self.autor} en {self.version}"
 

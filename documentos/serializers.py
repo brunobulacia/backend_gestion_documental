@@ -66,15 +66,7 @@ class PermisoDocumentoSerializer(serializers.ModelSerializer):
             "usuario",
             "puede_ver",
             "puede_editar",
-            "puede_descargar",
-            "puede_eliminar",
         ]
-
-
-class UsuarioSerializer(serializers.ModelSerializer):
-    class Meta:
-        model = Usuario
-        fields = ["id", "username", "email"]
 
 
 class CrearDocumentoSerializer(serializers.ModelSerializer): 
@@ -143,6 +135,22 @@ class DocumentoSerializer(serializers.ModelSerializer):
             "fecha_modificacion",
             "creado_por",
         ]
+
+class ComentarioDocumentoSerializer(serializers.ModelSerializer):
+    autor_username = serializers.CharField(source='autor.username', read_only=True)
+
+    class Meta:
+        model = ComentarioDocumento
+        fields = ['id', 'version', 'autor', 'autor_username', 'comentario', 'fecha', 'es_publico','rol']
+        read_only_fields = ['autor', 'fecha','rol']
+
+class ComentarioDocumentoSerializer(serializers.ModelSerializer):
+    autor_username = serializers.CharField(source='autor.username', read_only=True)
+
+    class Meta:
+        model = ComentarioDocumento
+        fields = ['id', 'version', 'autor', 'autor_username', 'comentario', 'fecha', 'es_publico','rol']
+        read_only_fields = ['autor', 'fecha','rol']
 
 class FiltroMetadatosSerializer(serializers.Serializer):
     tipo_documento = serializers.CharField(required=False)
