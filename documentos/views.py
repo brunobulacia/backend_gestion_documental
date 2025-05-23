@@ -51,7 +51,7 @@ GET /documentos/documentos/?ordering=-fecha_creacion
 
 nota: instalar requirements para el django-filter y filter backend
 """
-    from django.http import FileResponse, Http404
+from django.http import FileResponse, Http404
 from django.shortcuts import get_object_or_404
 import os
 
