@@ -5,8 +5,8 @@ from rest_framework.response import Response
 from rest_framework import status
 from rest_framework import viewsets, filters
 from django_filters.rest_framework import DjangoFilterBackend
-from documentos.serializers import CrearDocumentoSerializer, DocumentoSerializer, DocumentoVersionSerializer, ComentarioDocumentoSerializer, FiltroMetadatosSerializer
-from .models import Area, Documento, DocumentoVersion, ComentarioDocumento, PermisoDocumento, TipoDocumento
+from documentos.serializers import CrearDocumentoSerializer, DocumentoSerializer, DocumentoVersionSerializer, ComentarioDocumentoSerializer, FiltroMetadatosSerializer, TipoDocumentoSerializer
+from .models import Area, Documento, DocumentoVersion, ComentarioDocumento, PermisoDocumento, TipoDocumento, MetadatoPersonalizado
 from django.db.models import Q
 from django.http import FileResponse, Http404
 
@@ -367,3 +367,61 @@ def descargar_version(request, version_id):
         as_attachment=True,
         filename=os.path.basename(version.archivo.name)
     )
+
+
+@api_view(['POST'])
+@permission_classes([IsAuthenticated])
+def agregar_metadatos(request, documento_id):
+    try:
+        documento = Documento.objects.get(id=documento_id)
+    except Documento.DoesNotExist:
+        return Response({'detalle': 'Documento no encontrado'}, status=404)
+
+    data = request.data.copy()
+    
+    # Obtener los IDs de los metadatos actuales del documento
+    metadatos_actuales = MetadatoPersonalizado.objects.filter(documento=documento)
+    ids_actuales = set(metadatos_actuales.values_list('id', flat=True))
+    
+    # Conjunto de IDs en la nueva solicitud
+    ids_nuevos = set(metadato.get('id') for metadato in data if metadato.get('id'))
+    
+    # Eliminar metadatos que ya no están en la solicitud
+    ids_a_eliminar = ids_actuales - ids_nuevos
+    if ids_a_eliminar:
+        metadatos_actuales.filter(id__in=ids_a_eliminar).delete()
+    
+    # Crear o actualizar metadatos
+    print(data)
+    for metadato in data:
+        if metadato.get('id') is not None:
+            # Actualizar metadato existente
+            MetadatoPersonalizado.objects.filter(
+                id=metadato['id'],
+                documento=documento
+            ).update(
+                clave=metadato['clave'],
+                valor=metadato['valor']
+            )
+        else:
+            # Crear nuevo metadato
+            MetadatoPersonalizado.objects.create(
+                documento=documento,
+                clave=metadato['clave'],
+                valor=metadato['valor'],
+                tipo_dato='texto'
+            )
+    
+    return Response({
+        'detalle': 'Metadatos actualizados correctamente',
+        'metadatos_eliminados': len(ids_a_eliminar),
+        'metadatos_actualizados': len(data)
+    }, status=200)
+    
+    
+@api_view(['GET'])
+@permission_classes([IsAuthenticated])
+def obtener_tipos_documentos(request):
+    tipos = TipoDocumento.objects.all()
+    serializer = TipoDocumentoSerializer(tipos, many=True)
+    return Response(serializer.data)

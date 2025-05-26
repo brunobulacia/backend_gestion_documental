@@ -14,7 +14,9 @@ from .views import (
     listar_comentarios_version,
     crear_comentario,
     eliminar_comentario,
-    DocumentoViewSet
+    DocumentoViewSet,
+    agregar_metadatos,
+    obtener_tipos_documentos,
 )
 from .views import buscar_documentos
 
@@ -48,6 +50,8 @@ urlpatterns = [
     path('versiones/<uuid:version_id>/comentarios/', listar_comentarios_version),
     path('versiones/<uuid:version_id>/comentarios/crear/', crear_comentario),
     path('comentarios/<int:comentario_id>/eliminar/', eliminar_comentario),
+    path('<uuid:documento_id>/agregar-metadatos/', agregar_metadatos, name='agregar-metadatos'),
+    path('tipos-documentos/', obtener_tipos_documentos, name='obtener-tipos-documentos'),
 ]
 
 urlpatterns += router.urls

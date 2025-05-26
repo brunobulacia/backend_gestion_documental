@@ -108,7 +108,7 @@ class MetadatoPersonalizado(models.Model):
         ('fecha', 'Fecha'),
         ('opcion', 'Opción múltiple'),
     ]
-
+    id = models.BigAutoField(primary_key=True)
     documento = models.ForeignKey(
         Documento, on_delete=models.CASCADE, related_name="metadatos"
     )

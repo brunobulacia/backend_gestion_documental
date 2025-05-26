@@ -18,5 +18,5 @@ urlpatterns = [
     path('perfil/', perfil_usuario, name='perfil-usuario'),
     path('register/', registrar_usuario, name='registro-usuario'),
     path('login/', login_usuario, name='login'),
-    path('', get_users, name='get-users'),
+    path('todos/', get_users, name='get-users'),
 ]

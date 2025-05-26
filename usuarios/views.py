@@ -113,3 +113,11 @@ def get_users(request):
     users = Usuario.objects.all()
     serializer = UsuarioSerializer(users, many=True)
     return Response(serializer.data)
+
+@api_view(["GET"])
+@permission_classes([IsAuthenticated])
+def get_roles(request):
+    roles = Rol.objects.all()
+    serializer = RolSerializer(roles, many=True)
+    return Response(serializer.data)
+

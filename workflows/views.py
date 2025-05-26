@@ -155,7 +155,7 @@ def actualizar_flujo(request):
         return Response(
             {"error": "Flujo no encontrado"}, status=status.HTTP_404_NOT_FOUND
         )
-
+        
     serializer = FlujoTrabajoSerializer(flujo, data=flujo_data)
     if serializer.is_valid():
         serializer.save()
