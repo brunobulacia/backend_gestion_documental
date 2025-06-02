@@ -34,12 +34,15 @@ class ClienteSerializer(serializers.ModelSerializer):
         model = Cliente
         fields = '__all__'
 
-
 class UsuarioSerializer(serializers.ModelSerializer):
+    roles = serializers.SerializerMethodField()
+
     class Meta:
         model = Usuario
-        fields = ["id", "username", "email", "rol"]
+        fields = ['id', 'username', 'roles']
 
+    def get_roles(self, obj):
+        return [rol.nombre for rol in obj.roles.all()]
 
 class RegistroUsuarioSerializer(serializers.ModelSerializer):
     password = serializers.CharField(write_only=True, validators=[validate_password])
@@ -47,10 +50,8 @@ class RegistroUsuarioSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = Usuario
-        fields = ["username", "email", "password", "password2", "rol"]
-        extra_kwargs = {
-            "rol": {"required": False, "allow_null": True},
-        }
+        fields = ["username", "email", "password", "password2"]
+
 
     def validate(self, data):
         if data["password"] != data["password2"]:
@@ -59,24 +60,19 @@ class RegistroUsuarioSerializer(serializers.ModelSerializer):
             )
         return data
 
-    def create(self, validated_data):
-        rol = validated_data.pop("rol", None)
-        if rol is None:
-            from usuarios.models import Rol 
-            rol = Rol.objects.get(nombre__iexact="colaborador")
+    def create(self, validated_data):                                                              
 
         validated_data.pop("password2")
         user = Usuario.objects.create_user(
             username=validated_data["username"],
             email=validated_data["email"],
             password=validated_data["password"],
-            rol=rol,
         )
         return user
 
 
-class LoginSerializer(TokenObtainPairSerializer):
 
+class LoginSerializer(TokenObtainPairSerializer):
     def validate(self, attrs):
         data = super().validate(attrs)
 
@@ -85,8 +81,14 @@ class LoginSerializer(TokenObtainPairSerializer):
                 "user_id": self.user.id,
                 "username": self.user.username,
                 "email": self.user.email,
-                "rol": self.user.rol.nombre if self.user.rol else None,
+                "roles": [
+                    {
+                        "id": ru.rol.id,
+                        "nombre": ru.rol.nombre
+                    } for ru in self.user.rolusuarios_set.select_related("rol").all()
+                ]
             }
         )
 
         return data
+

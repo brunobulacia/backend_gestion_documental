@@ -23,11 +23,12 @@ class RolPermisos(models.Model):
 
 class Usuario(AbstractUser):
     email = models.EmailField(unique=True)
-    rol = models.ForeignKey(Rol, on_delete=models.SET_NULL, null=True)
+    roles = models.ManyToManyField(Rol, through='RolUsuarios')
 
 class RolUsuarios(models.Model):
     rol = models.ForeignKey(Rol, on_delete=models.CASCADE)
     usuario = models.ForeignKey(Usuario, on_delete=models.CASCADE)
+    fecha_asignacion = models.DateTimeField(auto_now_add=True, null=True)
 
 class Cliente(models.Model):
     usuario = models.OneToOneField(Usuario, on_delete=models.CASCADE)
@@ -39,7 +40,6 @@ class Cliente(models.Model):
     )
     telefono = models.CharField(max_length=20)
 
-
 class Recepcionista(models.Model):
     usuario = models.OneToOneField(Usuario, on_delete=models.CASCADE)
     ci = models.CharField(max_length=20, unique=True)
@@ -50,3 +50,16 @@ class Recepcionista(models.Model):
     )
     telefono = models.CharField(max_length=20)
     cargo = models.CharField(max_length=100)
+
+
+class Funcionalidad(models.Model):
+    nombre = models.CharField(max_length=100)
+    descripcion = models.TextField()
+
+    def __str__(self):
+        return self.nombre
+    
+class RolFuncionalidades(models.Model):
+    rol = models.ForeignKey(Rol, on_delete=models.CASCADE)
+    funcionalidad = models.ForeignKey(Funcionalidad, on_delete=models.CASCADE)
+    has_access = models.BooleanField(default=False)
