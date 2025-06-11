@@ -11,6 +11,8 @@ from django.db.models import Q
 from django.http import FileResponse, Http404
 from django.shortcuts import get_object_or_404
 import os
+from .utils import generar_pdf, generar_excel, generar_csv
+from django.http import HttpResponse
 
 #busqueda avanzada
 class DocumentoViewSet(viewsets.ModelViewSet):
@@ -444,3 +446,57 @@ def obtener_tipos_documentos(request):
     tipos = TipoDocumento.objects.all()
     serializer = TipoDocumentoSerializer(tipos, many=True)
     return Response(serializer.data)
+
+#?usuario_id=3&area_id=2&fecha_creacion_inicio=2025-01-01&fecha_creacion_fin=2025-12-31
+
+@api_view(["GET"])
+def reporte_documentos(request):
+    # Obtener filtros
+    documentos = Documento.objects.all()
+
+    fecha_inicio = request.GET.get("fecha_creacion_inicio")
+    fecha_fin = request.GET.get("fecha_creacion_fin")
+    usuario_id = request.GET.get("usuario_id")
+    area_id = request.GET.get("area_id")
+    estado = request.GET.get("estado")
+    tipo_id = request.GET.get("tipo_documento_id")
+    formato = request.GET.get("formato", "json")
+
+    if fecha_inicio and fecha_fin:
+        documentos = documentos.filter(fecha_creacion__range=[fecha_inicio, fecha_fin])
+    if usuario_id:
+        documentos = documentos.filter(creado_por_id=usuario_id)
+    if area_id:
+        documentos = documentos.filter(area_id=area_id)
+    if estado:
+        documentos = documentos.filter(estado=estado)
+    if tipo_id:
+        documentos = documentos.filter(tipo_id=tipo_id)
+
+    # JSON para el frontend
+    if formato == "json":
+        serializer = DocumentoSerializer(documentos, many=True)
+        return Response(serializer.data)
+
+    # PDF
+    elif formato == "pdf":
+        response = HttpResponse(content_type='application/pdf')
+        response['Content-Disposition'] = 'attachment; filename="reporte_documentos.pdf"'
+        generar_pdf(response, documentos)
+        return response
+
+    # Excel
+    elif formato == "excel":
+        response = HttpResponse(content_type='application/vnd.openxmlformats-officedocument.spreadsheetml.sheet')
+        response['Content-Disposition'] = 'attachment; filename="reporte_documentos.xlsx"'
+        generar_excel(response, documentos)
+        return response
+
+    # CSV
+    elif formato == "csv":
+        response = HttpResponse(content_type='text/csv')
+        response['Content-Disposition'] = 'attachment; filename="reporte_documentos.csv"'
+        generar_csv(response, documentos)
+        return response
+
+    return Response({"error": "Formato no válido"}, status=400)
