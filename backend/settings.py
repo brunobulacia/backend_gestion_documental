@@ -12,6 +12,8 @@ https://docs.djangoproject.com/en/5.2/ref/settings/
 
 from pathlib import Path
 from datetime import timedelta
+from decouple import config
+import os
 
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
 BASE_DIR = Path(__file__).resolve().parent.parent
@@ -26,7 +28,13 @@ SECRET_KEY = "django-insecure-n%^m#y4i$rg$y8!*jr=3g1n@o6sc7*8vwf%uj*nysrtu7r7t$$
 # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = True
 
-ALLOWED_HOSTS = []
+ALLOWED_HOSTS = [
+    '15.229.9.32',
+    '127.0.0.1',
+    'localhost',
+    '*',
+    '52.67.234.107'
+]
 
 
 # Application definition
@@ -41,6 +49,7 @@ INSTALLED_APPS = [
     "rest_framework",
     "usuarios",
     "documentos",
+    "workflows",
     "corsheaders",
     "drf_yasg",
     'django_filters',
@@ -56,6 +65,7 @@ MIDDLEWARE = [
     "django.contrib.auth.middleware.AuthenticationMiddleware",
     "django.contrib.messages.middleware.MessageMiddleware",
     "django.middleware.clickjacking.XFrameOptionsMiddleware",
+    'usuarios.middleware.BitacoraMiddleware',
 ]
 
 ROOT_URLCONF = "backend.urls"
@@ -92,11 +102,14 @@ WSGI_APPLICATION = "backend.wsgi.application"
 DATABASES = {
     'default': {
         'ENGINE': 'django.db.backends.postgresql',
-        "NAME": "gestion_documental",
-        "USER": "postgres",
-        "PASSWORD": "GRUPO9SI2",
-        "HOST": "db-gestion-documental-si2.c1gcgqmkyd8a.sa-east-1.rds.amazonaws.com",
-        "PORT": "5432"
+        'NAME': config('DB_NAME'),
+        'USER': config('DB_USER'),
+        'PASSWORD': config('DB_PASSWORD'),
+        'HOST': config('DB_HOST'),
+        'PORT': config('DB_PORT'),
+        'OPTIONS': {
+            'sslmode': 'require' 
+        }
     }
 }
 
@@ -170,3 +183,4 @@ CORS_ALLOWED_ORIGINS = [
 
 
 CORS_ALLOW_ALL_ORIGINS = True
+

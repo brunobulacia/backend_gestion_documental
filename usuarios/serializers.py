@@ -1,5 +1,5 @@
 from rest_framework import serializers
-from .models import Usuario, Rol, Recepcionista, Cliente, Permiso, RolUsuarios
+from .models import Usuario, Rol, Recepcionista, Cliente, Permiso, RolUsuarios, BitacoraUsuario
 from django.contrib.auth.password_validation import validate_password
 from rest_framework_simplejwt.serializers import TokenObtainPairSerializer
 
@@ -90,3 +90,10 @@ class LoginSerializer(TokenObtainPairSerializer):
         )
 
         return data
+
+class BitacoraUsuarioSerializer(serializers.ModelSerializer):
+    usuario = serializers.StringRelatedField()
+
+    class Meta:
+        model = BitacoraUsuario
+        fields = '__all__'

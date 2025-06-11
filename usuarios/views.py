@@ -4,8 +4,8 @@ from rest_framework.response import Response
 from rest_framework import status
 from rest_framework import viewsets
 
-from usuarios.models import Usuario, Rol, Permiso, Recepcionista, RolPermisos, RolUsuarios, Cliente
-from .serializers import RegistroUsuarioSerializer, LoginSerializer, UsuarioSerializer, PermisoSerializer, ClienteSerializer, RecepcionistaSerializer, RolSerializer, RolUsuariosSerializer
+from usuarios.models import Usuario, Rol, Permiso, Recepcionista, RolPermisos, RolUsuarios, Cliente, BitacoraUsuario
+from .serializers import RegistroUsuarioSerializer, LoginSerializer, UsuarioSerializer, PermisoSerializer, ClienteSerializer, RecepcionistaSerializer, RolSerializer, RolUsuariosSerializer, BitacoraUsuarioSerializer
 from rest_framework_simplejwt.tokens import RefreshToken
 from drf_yasg.utils import swagger_auto_schema
 from drf_yasg import openapi
@@ -112,4 +112,14 @@ def registrar_usuario(request):
 def get_users(request):
     users = Usuario.objects.all()
     serializer = UsuarioSerializer(users, many=True)
+    return Response(serializer.data)
+
+@api_view(["GET"])
+@permission_classes([IsAuthenticated]) 
+def ver_bitacora(request):
+    if not request.user.is_staff:
+        return Response({'detalle': 'No autorizado'}, status=403)
+
+    logs = BitacoraUsuario.objects.all().order_by('-fecha')[:100]  # últimos 100 logs
+    serializer = BitacoraUsuarioSerializer(logs, many=True)
     return Response(serializer.data)
