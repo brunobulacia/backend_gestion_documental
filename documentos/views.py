@@ -7,6 +7,7 @@ from rest_framework import viewsets, filters
 from django_filters.rest_framework import DjangoFilterBackend
 from documentos.serializers import CrearDocumentoSerializer, DocumentoSerializer, DocumentoVersionSerializer, ComentarioDocumentoSerializer, FiltroMetadatosSerializer, TipoDocumentoSerializer
 from .models import Area, Documento, DocumentoVersion, ComentarioDocumento, PermisoDocumento, TipoDocumento, MetadatoPersonalizado
+from usuarios.models import BitacoraUsuario
 from django.db.models import Q
 from django.http import FileResponse, Http404
 from django.shortcuts import get_object_or_404
@@ -68,6 +69,7 @@ def subir_documento(request):
     usuario = request.user
 
     if not usuario.organizacion:
+        
         return Response(
             {"error": "El usuario no está asociado a ninguna organización."},
             status=status.HTTP_400_BAD_REQUEST,
@@ -89,6 +91,14 @@ def subir_documento(request):
     serializer = CrearDocumentoSerializer(data=request.data, context={"request": request})
     if serializer.is_valid():
         serializer.save()
+        BitacoraUsuario.objects.create(
+        usuario=request.user,
+        ip=get_client_ip(request),
+        accion="Subió un documento",
+        endpoint=request.path,
+        metodo=request.method,
+        user_agent=request.META.get('HTTP_USER_AGENT', '')
+        )
         return Response(
             {"mensaje": "Documento subido correctamente"},
             status=status.HTTP_201_CREATED,
@@ -120,6 +130,14 @@ def listar_documentos(request):
         )
 
     serializer = DocumentoSerializer(documentos, many=True)
+    BitacoraUsuario.objects.create(
+        usuario=request.user,
+        ip=get_client_ip(request),
+        accion="Listó los documentos",
+        endpoint=request.path,
+        metodo=request.method,
+        user_agent=request.META.get('HTTP_USER_AGENT', '')
+        )
     return Response(serializer.data)
 
 
@@ -181,6 +199,14 @@ def subir_nueva_version(request, documento_id):
         subido_por=request.user,
         # comentarios=comentarios
     )
+    BitacoraUsuario.objects.create(
+        usuario=request.user,
+        ip=get_client_ip(request),
+        accion="Creó una nueva verision del documento",
+        endpoint=request.path,
+        metodo=request.method,
+        user_agent=request.META.get('HTTP_USER_AGENT', '')
+        )
 
     return Response({
         'detalle': 'Nueva versión subida',
@@ -196,6 +222,14 @@ def crear_tipo_documento(request):
         return Response({'detail': 'Falta el nombre'}, status=400)
 
     tipo = TipoDocumento.objects.create(nombre=nombre)
+    BitacoraUsuario.objects.create(
+        usuario=request.user,
+        ip=get_client_ip(request),
+        accion="Creó un tipo de documento",
+        endpoint=request.path,
+        metodo=request.method,
+        user_agent=request.META.get('HTTP_USER_AGENT', '')
+        )
     return Response({'id': tipo.id, 'nombre': tipo.nombre}, status=201)
 
 
@@ -207,6 +241,14 @@ def crear_area(request):
         return Response({'detail': 'Falta el nombre'}, status=400)
 
     area = Area.objects.create(nombre=nombre)
+    BitacoraUsuario.objects.create(
+        usuario=request.user,
+        ip=get_client_ip(request),
+        accion="Creó un area",
+        endpoint=request.path,
+        metodo=request.method,
+        user_agent=request.META.get('HTTP_USER_AGENT', '')
+        )
     return Response({'id': area.id, 'nombre': area.nombre}, status=201)
 
 
@@ -232,7 +274,14 @@ def resumen_documentos(request):
 
     tipos = TipoDocumento.objects.values('id', 'nombre')
     areas = Area.objects.values('id', 'nombre')
-
+    BitacoraUsuario.objects.create(
+        usuario=request.user,
+        ip=get_client_ip(request),
+        accion="Accedió al resumen de documentos",
+        endpoint=request.path,
+        metodo=request.method,
+        user_agent=request.META.get('HTTP_USER_AGENT', '')
+    )
     return Response({
         'documentos': documentos_serializados,
         'tipos_documento': list(tipos),
@@ -259,6 +308,14 @@ def restaurar_version(request, documento_id, version_id):
         autor=request.user,
         comentario=f"Restauración de la version {version.version}"
     )
+    BitacoraUsuario.objects.create(
+        usuario=request.user,
+        ip=get_client_ip(request),
+        accion="Restauró una version del documento",
+        endpoint=request.path,
+        metodo=request.method,
+        user_agent=request.META.get('HTTP_USER_AGENT', '')
+        )
     return Response({'detalle': 'Se restauró la version exitosamente', 'nueva_version': nueva_version.version})
 
 @api_view(['GET'])
@@ -289,6 +346,14 @@ def descargar_documento(request, version_id):
         archivo = version.archivo
         if not archivo:
             return Response({'detalle': 'Archivo no encontrado'}, status=status.HTTP_400_BAD_REQUEST)
+        BitacoraUsuario.objects.create(
+        usuario=request.user,
+        ip=get_client_ip(request),
+        accion="Descargó un documento",
+        endpoint=request.path,
+        metodo=request.method,
+        user_agent=request.META.get('HTTP_USER_AGENT', '')
+        )
         return FileResponse(archivo.open(), as_attachment=True, filename=archivo.name.split('/')[-1])
     except DocumentoVersion.DoesNotExist:
         return Response({'detalle':'Version no encontrada'}, status=status.HTTP_400_BAD_REQUEST)
@@ -304,6 +369,14 @@ def listar_comentarios_version(request, version_id):
 
     comentarios = ComentarioDocumento.objects.filter(version=version)
     serializer = ComentarioDocumentoSerializer(comentarios, many=True)
+    BitacoraUsuario.objects.create(
+        usuario=request.user,
+        ip=get_client_ip(request),
+        accion="Listó los comentarios",
+        endpoint=request.path,
+        metodo=request.method,
+        user_agent=request.META.get('HTTP_USER_AGENT', '')
+        )
     return Response(serializer.data)
 
 @api_view(['POST'])
@@ -320,6 +393,14 @@ def crear_comentario(request, version_id):
 
     if serializer.is_valid():
         serializer.save(autor=request.user, equipo=request.user.equipo, rol=request.user.rol)
+        BitacoraUsuario.objects.create(
+        usuario=request.user,
+        ip=get_client_ip(request),
+        accion="Creó un comentario",
+        endpoint=request.path,
+        metodo=request.method,
+        user_agent=request.META.get('HTTP_USER_AGENT', '')
+        )
         return Response(serializer.data, status=201)
     return Response(serializer.errors, status=400)
 
@@ -334,7 +415,14 @@ def eliminar_comentario(request, comentario_id):
     # Opcional: solo autor o admin pueden borrar
     if comentario.autor != request.user and not request.user.is_staff:
         return Response({'detalle': 'No autorizado'}, status=403)
-
+    BitacoraUsuario.objects.create(
+        usuario=request.user,
+        ip=get_client_ip(request),
+        accion="eliminó un comentario",
+        endpoint=request.path,
+        metodo=request.method,
+        user_agent=request.META.get('HTTP_USER_AGENT', '')
+        )
     comentario.delete()
     return Response({'detalle': 'Comentario eliminado'}, status=204)
 
@@ -380,7 +468,14 @@ def descargar_version(request, version_id):
     # Aquí puedes validar permisos si es necesario, por ejemplo:
     # if not request.user.has_perm("ver_documento", version.documento):
     #     raise PermissionDenied()
-
+    BitacoraUsuario.objects.create(
+        usuario=request.user,
+        ip=get_client_ip(request),
+        accion="Descargó la version de un documento",
+        endpoint=request.path,
+        metodo=request.method,
+        user_agent=request.META.get('HTTP_USER_AGENT', '')
+        )
     return FileResponse(
         version.archivo.open("rb"),
         as_attachment=True,
@@ -430,7 +525,14 @@ def agregar_metadatos(request, documento_id):
                 valor=metadato['valor'],
                 tipo_dato='texto'
             )
-    
+    BitacoraUsuario.objects.create(
+        usuario=request.user,
+        ip=get_client_ip(request),
+        accion="Agregó los metadatos de un documento",
+        endpoint=request.path,
+        metodo=request.method,
+        user_agent=request.META.get('HTTP_USER_AGENT', '')
+        )
     return Response({
         'detalle': 'Metadatos actualizados correctamente',
         'metadatos_eliminados': len(ids_a_eliminar),
@@ -444,3 +546,11 @@ def obtener_tipos_documentos(request):
     tipos = TipoDocumento.objects.all()
     serializer = TipoDocumentoSerializer(tipos, many=True)
     return Response(serializer.data)
+
+def get_client_ip(request):
+    x_forwarded_for = request.META.get('HTTP_X_FORWARDED_FOR')
+    if x_forwarded_for:
+        ip = x_forwarded_for.split(',')[0]
+    else:
+        ip = request.META.get('REMOTE_ADDR')
+    return ip

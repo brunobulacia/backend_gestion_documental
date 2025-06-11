@@ -1,7 +1,7 @@
 from rest_framework import serializers
 from .models import (
     Rol, Permiso, RolPermisos, Funcionalidad, RolFuncionalidades,
-    Planes, Organizacion, Usuario, RolUsuarios, Bitacora
+    Planes, Organizacion, Usuario, RolUsuarios, BitacoraUsuario
 )
 
 from django.contrib.auth.password_validation import validate_password
@@ -135,8 +135,9 @@ class UsuarioSerializer(serializers.ModelSerializer):
         model = Usuario
         fields = ["id", "username", "email", "roles", "organizacion", "es_admin"]
 
+class BitacoraUsuarioSerializer(serializers.ModelSerializer):
+    usuario = serializers.StringRelatedField()
 
-class BitacoraSerializer(serializers.ModelSerializer):
     class Meta:
-        model = Bitacora
-        fields = ["id", "usuario", "ip_address", "accion", "fecha_hora", "hash_transaccion"]
+        model = BitacoraUsuario
+        fields = '__all__'

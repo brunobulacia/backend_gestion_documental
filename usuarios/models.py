@@ -74,12 +74,14 @@ class RolUsuarios(models.Model):
     fecha_asignacion = models.DateTimeField(auto_now_add=True, null=True)
 
 
-class Bitacora(models.Model):
-    usuario = models.CharField(max_length=255)
-    ip_address = models.GenericIPAddressField()
-    accion = models.CharField(max_length=255)
-    fecha_hora = models.DateTimeField(auto_now_add=True)
-    hash_transaccion = models.CharField(max_length=64, unique=True)
+class BitacoraUsuario(models.Model):
+    usuario = models.ForeignKey(Usuario, on_delete=models.SET_NULL, null=True)
+    ip = models.GenericIPAddressField()
+    accion = models.TextField()
+    fecha = models.DateTimeField(auto_now_add=True)
+    endpoint = models.CharField(max_length=255)
+    metodo = models.CharField(max_length=10)
+    user_agent = models.TextField(blank=True)
 
     def __str__(self):
-        return f"{self.usuario.username} - {self.accion} - {self.fecha}"
+        return f"[{self.fecha}] {self.usuario} - {self.accion}"

@@ -1,5 +1,5 @@
 from django.urls import path, include
-from .views import perfil_usuario, registrar_usuario, login_usuario, get_users, update_user, suscribir_usuario, obtener_plan_actual, crear_usuario_en_empresa, crear_rol, asignar_usuario_a_rol, listar_roles_organizacion
+from .views import perfil_usuario, registrar_usuario, login_usuario, get_users, update_user, suscribir_usuario, obtener_plan_actual, crear_usuario_en_empresa, crear_rol, asignar_usuario_a_rol, listar_roles_organizacion, ver_bitacora
 from rest_framework.routers import DefaultRouter
 from . import views
 
@@ -24,4 +24,5 @@ urlpatterns = [
     path('rol/', crear_rol, name='crear-rol'),
     path('asignar-rol/', asignar_usuario_a_rol, name='asignar-usuario-a-rol'),
     path('listar-roles/', listar_roles_organizacion, name='listar-roles-organizacion'),
+    path('bitacora/', ver_bitacora),
 ]
