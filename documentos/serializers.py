@@ -9,7 +9,7 @@ from .models import (
     PermisoDocumento,
 )
 from usuarios.models import Usuario
-
+from rest_framework.request import Request
 
 class UsuarioSerializer(serializers.ModelSerializer):
     class Meta:
@@ -85,13 +85,13 @@ class CrearDocumentoSerializer(serializers.ModelSerializer):
             "es_publico",
             "archivo",
             "comentarios",
-        ]
+        ] 
 
     def create(self, validated_data):
         archivo = validated_data.pop("archivo")
         comentario_texto = validated_data.pop("comentarios", "").strip()
 
-        user = self.context["request"].user
+        user = self.context["request"].user  # NO lo conviertas a HttpRequest
         documento = Documento.objects.create(creado_por=user, **validated_data)
 
         version = DocumentoVersion.objects.create(
@@ -157,4 +157,4 @@ class FiltroMetadatosSerializer(serializers.Serializer):
     area = serializers.CharField(required=False)
     fecha_desde = serializers.DateField(required=False)
     fecha_hasta = serializers.DateField(required=False)
-    metadatos = serializers.JSONField(required=False)  # Ej: {"clave1": "valor1", "clave2": "valor2"}
+    metadatos = serializers.JSONField(required=False)

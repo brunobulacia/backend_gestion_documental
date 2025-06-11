@@ -9,6 +9,8 @@ from documentos.serializers import CrearDocumentoSerializer, DocumentoSerializer
 from .models import Area, Documento, DocumentoVersion, ComentarioDocumento, PermisoDocumento, TipoDocumento, MetadatoPersonalizado
 from django.db.models import Q
 from django.http import FileResponse, Http404
+from django.shortcuts import get_object_or_404
+import os
 
 #busqueda avanzada
 class DocumentoViewSet(viewsets.ModelViewSet):
@@ -21,7 +23,7 @@ class DocumentoViewSet(viewsets.ModelViewSet):
 
     def get_queryset(self):
         queryset = super().get_queryset()
-        search = self.request.query_params.get('search')
+        # search = self.request.query_params.get('search')
         clave = self.request.query_params.get('metadato_clave')
         valor = self.request.query_params.get('metadato_valor')
 
@@ -51,9 +53,7 @@ GET /documentos/documentos/?ordering=-fecha_creacion
 
 nota: instalar requirements para el django-filter y filter backend
 """
-from django.http import FileResponse, Http404
-from django.shortcuts import get_object_or_404
-import os
+
 
 @api_view(["GET", "POST"])
 @permission_classes([IsAuthenticated])
@@ -65,9 +65,28 @@ def documentos_view(request):
 
 
 def subir_documento(request):
-    serializer = CrearDocumentoSerializer(
-        data=request.data, context={"request": request}
-    )
+    usuario = request.user
+
+    if not usuario.organizacion:
+        return Response(
+            {"error": "El usuario no está asociado a ninguna organización."},
+            status=status.HTTP_400_BAD_REQUEST,
+        )
+
+    organizacion = usuario.organizacion
+    plan = organizacion.plan
+
+    # Verifica si el plan permite documentos ilimitados
+    if plan.maximo_documentos is not None:
+        documentos_actuales = Documento.objects.filter(organizacion=organizacion).count()
+
+        if documentos_actuales >= plan.maximo_documentos:
+            return Response(
+                {"error": "Se ha alcanzado el límite de documentos el plan de su organizacion."},
+                status=status.HTTP_403_FORBIDDEN,
+            )
+
+    serializer = CrearDocumentoSerializer(data=request.data, context={"request": request})
     if serializer.is_valid():
         serializer.save()
         return Response(
@@ -160,7 +179,7 @@ def subir_nueva_version(request, documento_id):
         archivo=archivo,
         version=nueva_version,
         subido_por=request.user,
-        comentarios=comentarios
+        # comentarios=comentarios
     )
 
     return Response({
