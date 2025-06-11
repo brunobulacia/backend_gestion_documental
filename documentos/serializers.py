@@ -9,12 +9,12 @@ from .models import (
     PermisoDocumento,
 )
 from usuarios.models import Usuario
-
+from rest_framework.request import Request
 
 class UsuarioSerializer(serializers.ModelSerializer):
     class Meta:
         model = Usuario
-        fields = ["id", "username", "email", "rol"]
+        fields = ["id", "username", "email"]
 
 
 class TipoDocumentoSerializer(serializers.ModelSerializer):
@@ -85,13 +85,13 @@ class CrearDocumentoSerializer(serializers.ModelSerializer):
             "es_publico",
             "archivo",
             "comentarios",
-        ]
+        ] 
 
     def create(self, validated_data):
         archivo = validated_data.pop("archivo")
         comentario_texto = validated_data.pop("comentarios", "").strip()
 
-        user = self.context["request"].user
+        user = self.context["request"].user  # NO lo conviertas a HttpRequest
         documento = Documento.objects.create(creado_por=user, **validated_data)
 
         version = DocumentoVersion.objects.create(
@@ -143,3 +143,18 @@ class ComentarioDocumentoSerializer(serializers.ModelSerializer):
         model = ComentarioDocumento
         fields = ['id', 'version', 'autor', 'autor_username', 'comentario', 'fecha', 'es_publico','rol']
         read_only_fields = ['autor', 'fecha','rol']
+
+class ComentarioDocumentoSerializer(serializers.ModelSerializer):
+    autor_username = serializers.CharField(source='autor.username', read_only=True)
+
+    class Meta:
+        model = ComentarioDocumento
+        fields = ['id', 'version', 'autor', 'autor_username', 'comentario', 'fecha', 'es_publico','rol']
+        read_only_fields = ['autor', 'fecha','rol']
+
+class FiltroMetadatosSerializer(serializers.Serializer):
+    tipo_documento = serializers.CharField(required=False)
+    area = serializers.CharField(required=False)
+    fecha_desde = serializers.DateField(required=False)
+    fecha_hasta = serializers.DateField(required=False)
+    metadatos = serializers.JSONField(required=False)

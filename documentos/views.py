@@ -5,10 +5,12 @@ from rest_framework.response import Response
 from rest_framework import status
 from rest_framework import viewsets, filters
 from django_filters.rest_framework import DjangoFilterBackend
-from documentos.serializers import CrearDocumentoSerializer, DocumentoSerializer, DocumentoVersionSerializer, ComentarioDocumentoSerializer
-from .models import Area, Documento, DocumentoVersion, ComentarioDocumento, PermisoDocumento, TipoDocumento
+from documentos.serializers import CrearDocumentoSerializer, DocumentoSerializer, DocumentoVersionSerializer, ComentarioDocumentoSerializer, FiltroMetadatosSerializer, TipoDocumentoSerializer
+from .models import Area, Documento, DocumentoVersion, ComentarioDocumento, PermisoDocumento, TipoDocumento, MetadatoPersonalizado
 from django.db.models import Q
 from django.http import FileResponse, Http404
+from django.shortcuts import get_object_or_404
+import os
 
 #busqueda avanzada
 class DocumentoViewSet(viewsets.ModelViewSet):
@@ -21,7 +23,7 @@ class DocumentoViewSet(viewsets.ModelViewSet):
 
     def get_queryset(self):
         queryset = super().get_queryset()
-        search = self.request.query_params.get('search')
+        # search = self.request.query_params.get('search')
         clave = self.request.query_params.get('metadato_clave')
         valor = self.request.query_params.get('metadato_valor')
 
@@ -51,7 +53,8 @@ GET /documentos/documentos/?ordering=-fecha_creacion
 
 nota: instalar requirements para el django-filter y filter backend
 """
-    
+
+
 @api_view(["GET", "POST"])
 @permission_classes([IsAuthenticated])
 def documentos_view(request):
@@ -62,9 +65,28 @@ def documentos_view(request):
 
 
 def subir_documento(request):
-    serializer = CrearDocumentoSerializer(
-        data=request.data, context={"request": request}
-    )
+    usuario = request.user
+
+    if not usuario.organizacion:
+        return Response(
+            {"error": "El usuario no está asociado a ninguna organización."},
+            status=status.HTTP_400_BAD_REQUEST,
+        )
+
+    organizacion = usuario.organizacion
+    plan = organizacion.plan
+
+    # Verifica si el plan permite documentos ilimitados
+    if plan.maximo_documentos is not None:
+        documentos_actuales = Documento.objects.filter(organizacion=organizacion).count()
+
+        if documentos_actuales >= plan.maximo_documentos:
+            return Response(
+                {"error": "Se ha alcanzado el límite de documentos el plan de su organizacion."},
+                status=status.HTTP_403_FORBIDDEN,
+            )
+
+    serializer = CrearDocumentoSerializer(data=request.data, context={"request": request})
     if serializer.is_valid():
         serializer.save()
         return Response(
@@ -144,7 +166,6 @@ def subir_nueva_version(request, documento_id):
         return Response({'detail': 'Documento no encontrado'}, status=404)
 
     archivo = request.FILES.get('archivo')
-    comentarios = request.data.get('comentarios', '')
 
     if not archivo:
         return Response({'detail': 'Se requiere un archivo'}, status=400)
@@ -158,13 +179,8 @@ def subir_nueva_version(request, documento_id):
         archivo=archivo,
         version=nueva_version,
         subido_por=request.user,
+        # comentarios=comentarios
     )
-    if comentarios.strip():
-        ComentarioDocumento.objects.create(
-            version=version,
-            autor=request.user,
-            comentario=comentarios.strip()
-        )
 
     return Response({
         'detalle': 'Nueva versión subida',
@@ -322,22 +338,109 @@ def eliminar_comentario(request, comentario_id):
     comentario.delete()
     return Response({'detalle': 'Comentario eliminado'}, status=204)
 
-"""
-Ejemplos de uso de los endpoints de gestión de comentarios:
+@api_view(['GET'])
+@permission_classes([IsAuthenticated])
+def buscar_documentos(request):
+    serializer = FiltroMetadatosSerializer(data=request.query_params)
+    if not serializer.is_valid():
+        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
-GET /documentos/versiones/<version_id>/comentarios/
-🔍 Listar todos los comentarios asociados a una versión de documento.
-Ejemplo: /documentos/versiones/1a2b3c4d-5678-90ab-cdef-1234567890ab/comentarios/
+    # Filtros básicos (tipo, área, fecha)
+    documentos = Documento.objects.all()
+    if serializer.validated_data.get('tipo_documento'):
+        documentos = documentos.filter(tipo__nombre=serializer.validated_data['tipo_documento'])
+    if serializer.validated_data.get('area'):
+        documentos = documentos.filter(area__nombre=serializer.validated_data['area'])
+    if serializer.validated_data.get('fecha_desde') and serializer.validated_data.get('fecha_hasta'):
+        documentos = documentos.filter(
+            fecha_creacion__date__range=(
+                serializer.validated_data['fecha_desde'],
+                serializer.validated_data['fecha_hasta']
+            )
+        )
 
-POST /documentos/versiones/<version_id>/comentarios/crear/
-✍️ Crear un nuevo comentario para una versión de documento.
-Requiere autenticación. El cuerpo del request (JSON) debe incluir al menos:
-{
-     "contenido": "Comentario de prueba",
-     "visibilidad": "publico"  # o puede ser un rol_id si es restringido
-}
+    # Filtros por metadatos (si existen)
+    if serializer.validated_data.get('metadatos'):
+        for clave, valor in serializer.validated_data['metadatos'].items():
+            documentos = documentos.filter(
+                metadatos__clave=clave,
+                metadatos__valor=valor
+            )
 
-DELETE /documentos/comentarios/<comentario_id>/eliminar/
-🗑️ Eliminar un comentario. Solo el autor o un staff/admin puede borrarlo.
-Ejemplo: /documentos/comentarios/42/eliminar/
-"""
+    # Optimización de consultas
+    documentos = documentos.prefetch_related('metadatos', 'versiones').select_related('tipo', 'area')
+    return Response(DocumentoSerializer(documentos, many=True).data)
+
+def descargar_version(request, version_id):
+    version = get_object_or_404(DocumentoVersion, id=version_id)
+
+    if not version.archivo:
+        raise Http404("El archivo no está disponible.")
+
+    # Aquí puedes validar permisos si es necesario, por ejemplo:
+    # if not request.user.has_perm("ver_documento", version.documento):
+    #     raise PermissionDenied()
+
+    return FileResponse(
+        version.archivo.open("rb"),
+        as_attachment=True,
+        filename=os.path.basename(version.archivo.name)
+    )
+
+
+@api_view(['POST'])
+@permission_classes([IsAuthenticated])
+def agregar_metadatos(request, documento_id):
+    try:
+        documento = Documento.objects.get(id=documento_id)
+    except Documento.DoesNotExist:
+        return Response({'detalle': 'Documento no encontrado'}, status=404)
+
+    data = request.data.copy()
+    
+    # Obtener los IDs de los metadatos actuales del documento
+    metadatos_actuales = MetadatoPersonalizado.objects.filter(documento=documento)
+    ids_actuales = set(metadatos_actuales.values_list('id', flat=True))
+    
+    # Conjunto de IDs en la nueva solicitud
+    ids_nuevos = set(metadato.get('id') for metadato in data if metadato.get('id'))
+    
+    # Eliminar metadatos que ya no están en la solicitud
+    ids_a_eliminar = ids_actuales - ids_nuevos
+    if ids_a_eliminar:
+        metadatos_actuales.filter(id__in=ids_a_eliminar).delete()
+    
+    # Crear o actualizar metadatos
+    print(data)
+    for metadato in data:
+        if metadato.get('id') is not None:
+            # Actualizar metadato existente
+            MetadatoPersonalizado.objects.filter(
+                id=metadato['id'],
+                documento=documento
+            ).update(
+                clave=metadato['clave'],
+                valor=metadato['valor']
+            )
+        else:
+            # Crear nuevo metadato
+            MetadatoPersonalizado.objects.create(
+                documento=documento,
+                clave=metadato['clave'],
+                valor=metadato['valor'],
+                tipo_dato='texto'
+            )
+    
+    return Response({
+        'detalle': 'Metadatos actualizados correctamente',
+        'metadatos_eliminados': len(ids_a_eliminar),
+        'metadatos_actualizados': len(data)
+    }, status=200)
+    
+    
+@api_view(['GET'])
+@permission_classes([IsAuthenticated])
+def obtener_tipos_documentos(request):
+    tipos = TipoDocumento.objects.all()
+    serializer = TipoDocumentoSerializer(tipos, many=True)
+    return Response(serializer.data)

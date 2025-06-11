@@ -3,6 +3,8 @@ import os
 from django.db import models
 from django.conf import settings
 
+from usuarios.models import Organizacion
+
 
 class TipoDocumento(models.Model):
     nombre = models.CharField(max_length=100)
@@ -30,7 +32,9 @@ class Documento(models.Model):
     fecha_creacion = models.DateTimeField(auto_now_add=True)
     fecha_modificacion = models.DateTimeField(auto_now=True)
     es_publico = models.BooleanField(default=False)
-
+    organizacion = models.ForeignKey(
+        Organizacion, on_delete=models.CASCADE, related_name="documentos", null=True, blank=True
+    )
     def __str__(self):
         return self.titulo
 
@@ -80,7 +84,7 @@ class ComentarioDocumento(models.Model):
         return f"Comentario de {self.autor} en {self.version}"
 
 
-class MetadatoPersonalizado(models.Model):
+""" class MetadatoPersonalizado(models.Model):
     documento = models.ForeignKey(
         Documento, on_delete=models.CASCADE, related_name="metadatos"
     )
@@ -88,7 +92,7 @@ class MetadatoPersonalizado(models.Model):
     valor = models.CharField(max_length=255)
 
     def __str__(self):
-        return f"{self.clave}: {self.valor}"
+        return f"{self.clave}: {self.valor}" """
 
 
 class PermisoDocumento(models.Model):
@@ -101,3 +105,22 @@ class PermisoDocumento(models.Model):
     puede_comentar = models.BooleanField(default=False)
     class Meta:
         unique_together = ("documento", "usuario")
+
+class MetadatoPersonalizado(models.Model):
+    TIPO_DATO_CHOICES = [
+        ('texto', 'Texto'),
+        ('fecha', 'Fecha'),
+        ('opcion', 'Opción múltiple'),
+    ]
+    id = models.BigAutoField(primary_key=True)
+    documento = models.ForeignKey(
+        Documento, on_delete=models.CASCADE, related_name="metadatos"
+    )
+    clave = models.CharField(max_length=100)
+    valor = models.CharField(max_length=255)  # Almacena el valor en texto (para búsquedas)
+    tipo_dato = models.CharField(max_length=10, choices=TIPO_DATO_CHOICES, default='texto')
+    opciones = models.JSONField(blank=True, null=True)  # Solo para tipo 'opcion' (ej: ["Confidencial", "Público"])
+
+    def __str__(self):
+        return f"{self.clave}: {self.valor} ({self.tipo_dato})"
+
