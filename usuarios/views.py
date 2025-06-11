@@ -223,14 +223,6 @@ def login_usuario(request):
         print(request.data)
         usuario = serializer.validated_data['username']
         print(usuario)
-        BitacoraUsuario.objects.create(
-        usuario=request.user,
-        ip=get_client_ip(request),
-        accion="Hizo un login de usuario",
-        endpoint=request.path,
-        metodo=request.method,
-        user_agent=request.META.get('HTTP_USER_AGENT', '')
-        )
         return Response(serializer.validated_data, status=status.HTTP_200_OK)
     return Response(serializer.errors, status=status.HTTP_401_UNAUTHORIZED)
 
@@ -278,14 +270,6 @@ def registrar_usuario(request):
                 } if plan else None,
             } if organizacion else None,
         }
-        BitacoraUsuario.objects.create(
-        usuario=request.user,
-        ip=get_client_ip(request),
-        accion="Se registró un usuario",
-        endpoint=request.path,
-        metodo=request.method,
-        user_agent=request.META.get('HTTP_USER_AGENT', '')
-        )
         return Response(response_data, status=status.HTTP_201_CREATED)
 
     return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
