@@ -101,7 +101,7 @@ WSGI_APPLICATION = "backend.wsgi.application"
 }
 """
 
-DATABASES = {
+""" DATABASES = {
     'default': {
         'ENGINE': 'django.db.backends.postgresql',
         "NAME": os.environ.get('DB_NAME'),
@@ -109,11 +109,22 @@ DATABASES = {
         "PASSWORD": os.environ.get('DB_PASSWORD'), 
         "HOST": os.environ.get('DB_HOST'),
         "PORT": os.environ.get('DB_PORT'),
-        "OPTIONS": {
-            "sslmode": "require",
-        }
+    }
+} """
+
+
+DATABASES = {
+    "default": {
+        "ENGINE": "django.db.backends.postgresql",
+        "NAME": config("DB_NAME", default="db_name"),
+        "USER": config("DB_USER", default="db_user"),
+        "PASSWORD": config("DB_PASSWORD", default="db_password"),
+        "HOST": config("DB_HOST", default="localhost"),
+        "PORT": config("DB_PORT", default="5432"),
+        "ATOMIC_REQUESTS": True,
     }
 }
+
 
 
 # Password validation
