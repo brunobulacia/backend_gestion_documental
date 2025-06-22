@@ -11,7 +11,7 @@ class Formulario(models.Model):
     creado_por = models.ForeignKey(
         settings.AUTH_USER_MODEL,
         on_delete=models.CASCADE,
-        related_name="documentos_creados"
+        related_name="formulario_creados"
     )
     fecha_creacion = models.DateTimeField(auto_now_add=True)
 
@@ -41,7 +41,11 @@ class CampoFormulario(models.Model):
 class RespuestaFormulario(models.Model):
     formulario = models.ForeignKey(Formulario, on_delete=models.CASCADE)
     documento = models.ForeignKey(Documento, on_delete=models.CASCADE)
-    completado_por = models.ForeignKey(User, on_delete=models.CASCADE)
+    completado_por = models.ForeignKey(
+        settings.AUTH_USER_MODEL,
+        on_delete=models.CASCADE,
+        related_name="formulario_repondido"
+    )
     fecha_respuesta = models.DateTimeField(auto_now_add=True)
     datos = models.JSONField()
 

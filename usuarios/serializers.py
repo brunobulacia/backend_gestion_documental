@@ -134,6 +134,7 @@ class UsuarioSerializer(serializers.ModelSerializer):
     class Meta:
         model = Usuario
         fields = ["id", "username", "email", "roles", "organizacion", "es_admin"]
+        ref_name = 'UsuarioSerializerUsuarios'
 
 
 class BitacoraSerializer(serializers.ModelSerializer):

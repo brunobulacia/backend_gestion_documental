@@ -25,7 +25,7 @@ class ReglaAutomatica(models.Model):
     creada_por = models.ForeignKey(
         settings.AUTH_USER_MODEL,
         on_delete=models.CASCADE,
-        related_name="documentos_creados",)
+        related_name="reglas_creadas",)
     creada_en = models.DateTimeField(auto_now_add=True)
 
 
@@ -35,7 +35,7 @@ class EjecucionRegla(models.Model):
     usuario = models.ForeignKey(
         settings.AUTH_USER_MODEL,
         on_delete=models.CASCADE,
-        related_name="documentos_creados",)
+        related_name="reglas_ejecutadas",)
     fecha = models.DateTimeField(auto_now_add=True)
     estado = models.CharField(max_length=10, choices=[('exito', 'Éxito'), ('error', 'Error')])
     mensaje = models.TextField()
