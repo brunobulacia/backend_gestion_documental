@@ -15,6 +15,7 @@ class UsuarioSerializer(serializers.ModelSerializer):
     class Meta:
         model = Usuario
         fields = ["id", "username", "email"]
+        ref_name = 'UsuarioSerializerDocumento'
 
 
 class TipoDocumentoSerializer(serializers.ModelSerializer):

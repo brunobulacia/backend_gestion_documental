@@ -87,7 +87,7 @@ def suscribir_usuario(request):
         )
     return Response(
         {
-            
+            "Suscripción realizada con éxito"
         },
         status=status.HTTP_200_OK,
     )
