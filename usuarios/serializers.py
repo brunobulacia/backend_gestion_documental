@@ -4,7 +4,7 @@ from .models import Usuario, Rol, Recepcionista, Cliente, Permiso, RolUsuarios, 
 =======
 from .models import (
     Rol, Permiso, RolPermisos, Funcionalidad, RolFuncionalidades,
-    Planes, Organizacion, Usuario, RolUsuarios, Bitacora
+    Planes, Organizacion, Usuario, RolUsuarios, BitacoraUsuario
 )
 
 >>>>>>> main
@@ -146,10 +146,11 @@ class UsuarioSerializer(serializers.ModelSerializer):
     class Meta:
         model = Usuario
         fields = ["id", "username", "email", "roles", "organizacion", "es_admin"]
+        ref_name = 'UsuarioSerializerUsuarios'
 
+class BitacoraUsuarioSerializer(serializers.ModelSerializer):
+    usuario = serializers.StringRelatedField()
 
-class BitacoraSerializer(serializers.ModelSerializer):
     class Meta:
-        model = Bitacora
-        fields = ["id", "usuario", "ip_address", "accion", "fecha_hora", "hash_transaccion"]
->>>>>>> main
+        model = BitacoraUsuario
+        fields = '__all__'

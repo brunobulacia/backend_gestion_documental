@@ -14,7 +14,7 @@ class BitacoraMiddleware:
             metodo = request.method
             path = request.path
 
-            if metodo != 'GET':  
+            if metodo != 'GET':  # Si querés registrar todo, quitá esto
                 accion = f"{metodo} en {path}"
 
                 BitacoraUsuario.objects.create(

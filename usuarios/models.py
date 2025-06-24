@@ -75,21 +75,8 @@ class RolUsuarios(models.Model):
     fecha_asignacion = models.DateTimeField(auto_now_add=True, null=True)
 
 
-<<<<<<< HEAD
-class Recepcionista(models.Model):
-    usuario = models.OneToOneField(Usuario, on_delete=models.CASCADE)
-    ci = models.CharField(max_length=20, unique=True)
-    nombre = models.CharField(max_length=100)
-    direccion = models.TextField()
-    sexo = models.CharField(
-        max_length=1, choices=[("M", "Masculino"), ("F", "Femenino")]
-    )
-    telefono = models.CharField(max_length=20)
-    cargo = models.CharField(max_length=100)
-
-
 class BitacoraUsuario(models.Model):
-    usuario = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.SET_NULL, null=True)
+    usuario = models.ForeignKey(Usuario, on_delete=models.SET_NULL, null=True)
     ip = models.GenericIPAddressField()
     accion = models.TextField()
     fecha = models.DateTimeField(auto_now_add=True)
@@ -99,14 +86,3 @@ class BitacoraUsuario(models.Model):
 
     def __str__(self):
         return f"[{self.fecha}] {self.usuario} - {self.accion}"
-=======
-class Bitacora(models.Model):
-    usuario = models.CharField(max_length=255)
-    ip_address = models.GenericIPAddressField()
-    accion = models.CharField(max_length=255)
-    fecha_hora = models.DateTimeField(auto_now_add=True)
-    hash_transaccion = models.CharField(max_length=64, unique=True)
-
-    def __str__(self):
-        return f"{self.usuario.username} - {self.accion} - {self.fecha}"
->>>>>>> main

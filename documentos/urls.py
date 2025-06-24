@@ -1,4 +1,4 @@
-from django.urls import path
+from django.urls import path, include
 from rest_framework.routers import DefaultRouter
 
 from .views import (
@@ -25,6 +25,7 @@ router = DefaultRouter()
 router.register(r'documentos', DocumentoViewSet, basename='documento')
 
 urlpatterns = [
+    path('', include(router.urls)),
     path("", documentos_view, name="documentos_view"),
     path(
         "<uuid:documento_id>/versiones/",

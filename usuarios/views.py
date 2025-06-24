@@ -4,13 +4,8 @@ from rest_framework.response import Response
 from rest_framework import status
 from rest_framework import viewsets
 
-<<<<<<< HEAD
-from usuarios.models import Usuario, Rol, Permiso, Recepcionista, RolPermisos, RolUsuarios, Cliente, BitacoraUsuario
-from .serializers import RegistroUsuarioSerializer, LoginSerializer, UsuarioSerializer, PermisoSerializer, ClienteSerializer, RecepcionistaSerializer, RolSerializer, RolUsuariosSerializer, BitacoraUsuarioSerializer
-=======
-from usuarios.models import Usuario, Rol, Permiso, RolUsuarios, Organizacion, Planes
-from .serializers import RegistroUsuarioSerializer, LoginSerializer, UsuarioSerializer, PermisoSerializer, RolSerializer, RolUsuariosSerializer, PlanesSerializer
->>>>>>> main
+from usuarios.models import Usuario, Rol, Permiso, RolUsuarios, Organizacion, Planes, BitacoraUsuario
+from .serializers import RegistroUsuarioSerializer, LoginSerializer, UsuarioSerializer, PermisoSerializer, RolSerializer, RolUsuariosSerializer, PlanesSerializer, BitacoraUsuarioSerializer
 from rest_framework_simplejwt.tokens import RefreshToken
 from drf_yasg.utils import swagger_auto_schema
 from drf_yasg import openapi
@@ -82,10 +77,17 @@ def suscribir_usuario(request):
     user.organizacion = nueva_organizacion
     user.es_admin = True
     user.save()
-
+    BitacoraUsuario.objects.create(
+        usuario=request.user,
+        ip=get_client_ip(request),
+        accion="Suscribió a un usuario",
+        endpoint=request.path,
+        metodo=request.method,
+        user_agent=request.META.get('HTTP_USER_AGENT', '')
+        )
     return Response(
         {
-            
+            "Suscripción realizada con éxito"
         },
         status=status.HTTP_200_OK,
     )
@@ -178,6 +180,14 @@ def crear_usuario_en_empresa(request):
     )
 
     serializer = UsuarioSerializer(nuevo_usuario)
+    BitacoraUsuario.objects.create(
+        usuario=request.user,
+        ip=get_client_ip(request),
+        accion="Creó un usuario en empresa",
+        endpoint=request.path,
+        metodo=request.method,
+        user_agent=request.META.get('HTTP_USER_AGENT', '')
+        )
     return Response({"message": "Usuario creado exitosamente", "usuario": serializer.data}, status=status.HTTP_201_CREATED)
 
 @api_view(["GET"])
@@ -201,7 +211,7 @@ def perfil_usuario(request):
             "id": user.id,
             "username": user.username,
             "email": user.email,
-            "rol": user.rol.nombre if user.rol else None,
+            # "rol": user.rol.nombre if user.rol else None,
         }
     )
 
@@ -260,7 +270,6 @@ def registrar_usuario(request):
                 } if plan else None,
             } if organizacion else None,
         }
-
         return Response(response_data, status=status.HTTP_201_CREATED)
 
     return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
@@ -318,7 +327,14 @@ def update_user(request):
                     RolUsuarios.objects.create(usuario=user, rol=rol)
                 except Rol.DoesNotExist:
                     continue  # Ignora IDs inválidos (puedes cambiarlo si prefieres lanzar error)
-
+        BitacoraUsuario.objects.create(
+        usuario=request.user,
+        ip=get_client_ip(request),
+        accion="Se actualizó los datos de usuario",
+        endpoint=request.path,
+        metodo=request.method,
+        user_agent=request.META.get('HTTP_USER_AGENT', '')
+        )
         return Response(UsuarioSerializer(user).data)
     return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
@@ -349,6 +365,14 @@ def crear_rol(request):
         return Response({"error": "Ya existe un rol con ese nombre en su organización."}, status=400)
 
     rol = Rol.objects.create(nombre=nombre_rol, organizacion=organizacion)
+    BitacoraUsuario.objects.create(
+        usuario=request.user,
+        ip=get_client_ip(request),
+        accion="Creó un rol de usuario",
+        endpoint=request.path,
+        metodo=request.method,
+        user_agent=request.META.get('HTTP_USER_AGENT', '')
+        )
     return Response({"mensaje": "Rol creado correctamente", "rol_id": rol.id})
 
 
@@ -378,9 +402,16 @@ def asignar_usuario_a_rol(request):
 
     if rol.organizacion != usuario_admin.organizacion:
         return Response({"error": "No puede asignar roles de otra organización."}, status=403)
-
+    
     RolUsuarios.objects.create(usuario=usuario_asignado, rol=rol)
-
+    BitacoraUsuario.objects.create(
+        usuario=request.user,
+        ip=get_client_ip(request),
+        accion="Asignó un rol de usuario",
+        endpoint=request.path,
+        metodo=request.method,
+        user_agent=request.META.get('HTTP_USER_AGENT', '')
+        )
     return Response({"mensaje": "Rol asignado correctamente."})
 
 
@@ -396,4 +427,32 @@ def listar_roles_organizacion(request):
     data = [{"id": r.id, "nombre": r.nombre} for r in roles]
 
     return Response(data)
->>>>>>> main
+
+
+@api_view(["GET"])
+@permission_classes([IsAuthenticated]) 
+def ver_bitacora(request):
+    if not request.user.is_staff:
+        return Response({'detalle': 'No autorizado'}, status=403)
+
+    logs = BitacoraUsuario.objects.all().order_by('-fecha')[:100]  # últimos 100 logs
+    serializer = BitacoraUsuarioSerializer(logs, many=True)
+    BitacoraUsuario.objects.create(
+        usuario=request.user,
+        ip=get_client_ip(request),
+        accion="Accedió al log de la bitacora",
+        endpoint=request.path,
+        metodo=request.method,
+        user_agent=request.META.get('HTTP_USER_AGENT', '')
+        )
+    return Response(serializer.data)
+
+def get_client_ip(request):
+    x_forwarded_for = request.META.get('HTTP_X_FORWARDED_FOR')
+    if x_forwarded_for:
+        ip = x_forwarded_for.split(',')[0]
+    else:
+        ip = request.META.get('REMOTE_ADDR')
+    return ip
+
+
