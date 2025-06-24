@@ -8,6 +8,7 @@ router.register('campos-formulario', CampoFormularioViewSet, basename='campo-for
 router.register('respuestas-formulario', RespuestaFormularioViewSet, basename='respuesta-formulario')
 
 urlpatterns = [
+    path('campos-formulario/id_form=<int:id_form>/', CampoFormularioViewSet.as_view({'get': 'list_by_formulario'})),
     path('', include(router.urls)),
 ]
 

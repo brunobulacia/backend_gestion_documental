@@ -26,6 +26,6 @@ urlpatterns = [
     path("usuarios/", include("usuarios.urls")),
     path("documentos/", include("documentos.urls")),
     path("workflows/", include("workflows.urls")),
-    path("reglas", include("reglas.urls")),
-    path("formularios", include('formularios.urls'))
+    path("reglas/", include("reglas.urls")),
+    path("formularios/", include('formularios.urls'))
 ]

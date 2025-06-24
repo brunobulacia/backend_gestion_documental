@@ -211,7 +211,7 @@ def perfil_usuario(request):
             "id": user.id,
             "username": user.username,
             "email": user.email,
-            "rol": user.rol.nombre if user.rol else None,
+            # "rol": user.rol.nombre if user.rol else None,
         }
     )
 
