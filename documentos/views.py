@@ -1,5 +1,6 @@
 from django.utils.dateparse import parse_date
-from rest_framework.decorators import api_view, permission_classes
+from rest_framework.decorators import api_view, permission_classes, parser_classes
+from rest_framework.parsers import MultiPartParser, FormParser
 from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
 from rest_framework import status
@@ -46,10 +47,12 @@ def documentos_view(request):
     elif request.method == "POST":
         return subir_documento(request)
 
-
+@api_view(["POST"])
+@permission_classes([IsAuthenticated])
+@parser_classes([MultiPartParser, FormParser])
 def subir_documento(request):
     usuario = request.user
-
+    print("hola")
     if not usuario.organizacion:
         
         return Response(
@@ -59,7 +62,7 @@ def subir_documento(request):
 
     organizacion = usuario.organizacion
     plan = organizacion.plan
-
+    
     # Verifica si el plan permite documentos ilimitados
     if plan.maximo_documentos is not None:
         documentos_actuales = Documento.objects.filter(organizacion=organizacion).count()
@@ -69,7 +72,7 @@ def subir_documento(request):
                 {"error": "Se ha alcanzado el límite de documentos el plan de su organizacion."},
                 status=status.HTTP_403_FORBIDDEN,
             )
-
+    
     serializer = CrearDocumentoSerializer(data=request.data, context={"request": request})
     if serializer.is_valid():
         serializer.save()

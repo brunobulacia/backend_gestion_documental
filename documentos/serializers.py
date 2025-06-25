@@ -75,6 +75,8 @@ class CrearDocumentoSerializer(serializers.ModelSerializer):
     comentarios = serializers.CharField(
         write_only=True, required=False, allow_blank=True
     )
+    tipo = serializers.PrimaryKeyRelatedField(queryset=TipoDocumento.objects.all())
+    area = serializers.PrimaryKeyRelatedField(queryset=Area.objects.all())
 
     class Meta:
         model = Documento
