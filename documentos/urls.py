@@ -17,6 +17,7 @@ from .views import (
     DocumentoViewSet,
     agregar_metadatos,
     obtener_tipos_documentos,
+    subir_documento
 )
 from .views import buscar_documentos
 
@@ -26,6 +27,7 @@ router.register(r'documentos', DocumentoViewSet, basename='documento')
 urlpatterns = [
     path('', include(router.urls)),
     path("", documentos_view, name="documentos_view"),
+    path('subir/', subir_documento, name='subir-documento'),
     path(
         "<uuid:documento_id>/versiones/",
         historial_versiones,
