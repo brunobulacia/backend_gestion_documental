@@ -15,6 +15,10 @@ router.register('ejecuciones-reglas', EjecucionReglaViewSet, basename='ejecucion
 urlpatterns = [
     path('', include(router.urls)),
 
+    path('ejecuciones-reglas/regla=<int:regla_id>/', 
+         EjecucionReglaViewSet.as_view({'get': 'list_by_regla'}), 
+         name='ejecuciones-regla-by-regla'),
+
     # Historial y exportación
     path('historial-reglas/', historial_reglas_view, name='historial-reglas'),
     path('historial-reglas/export/pdf/', exportar_historial_pdf, name='exportar-historial-pdf'),

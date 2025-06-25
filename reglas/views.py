@@ -81,6 +81,23 @@ class EjecucionReglaViewSet(viewsets.ModelViewSet):
     serializer_class = EjecucionReglaSerializer
     permission_classes = [permissions.IsAuthenticated]
 
+    def get_queryset(self):
+        query_set = super().get_queryset()
+        regla = self.request.query_params.get('regla')
+        if regla is not None:
+            try:
+                regla_id = int(str(regla).strip().replace('/', ''))
+                query_set = query_set.filter(regla_id=regla_id)
+            except ValueError:
+                query_set = query_set.none()
+        return query_set
+    
+    def list_by_regla(self, request, regla_id):
+        queryset = self.get_queryset().filter(regla=regla_id)
+        serializer = self.get_serializer(queryset, many=True)
+        return Response(serializer.data)
+
+
 
 @api_view(['GET'])
 def historial_reglas_view(request):

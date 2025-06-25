@@ -24,7 +24,6 @@ class DocumentoViewSet(viewsets.ModelViewSet):
 
     def get_queryset(self):
         queryset = super().get_queryset()
-        # search = self.request.query_params.get('search')
         clave = self.request.query_params.get('metadato_clave')
         valor = self.request.query_params.get('metadato_valor')
 
@@ -38,23 +37,6 @@ class DocumentoViewSet(viewsets.ModelViewSet):
 
         return queryset
     
-"""
-Ejemplos de busqueda avanzada
-Por texto libre:
-GET /documentos/documentos/?search=manual
-Campos del modelo:
-GET /documentos/documentos/?tipo=2&area=5&es_publico=true
-metadatos personalizados:
-GET /documentos/documentos/?metadato_clave=proyecto&metadato_valor=python
-Busqueda combinada + filtros avanzados:
-GET /documentos/documentos/?search=report&metadato_clave=tema&metadato_valor=IA&tipo=3
-Agregar ordenamiento (ejemplo, por fecha de creacion descendente):
-GET /documentos/documentos/?ordering=-fecha_creacion
-
-
-nota: instalar requirements para el django-filter y filter backend
-"""
-
 
 @api_view(["GET", "POST"])
 @permission_classes([IsAuthenticated])
