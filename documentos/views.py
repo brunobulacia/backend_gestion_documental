@@ -6,13 +6,14 @@ from rest_framework.response import Response
 from rest_framework import status
 from rest_framework import viewsets, filters
 from django_filters.rest_framework import DjangoFilterBackend
-from documentos.serializers import CrearDocumentoSerializer, DocumentoSerializer, DocumentoVersionSerializer, ComentarioDocumentoSerializer, FiltroMetadatosSerializer, TipoDocumentoSerializer
+from documentos.serializers import AreaSerializer, CrearDocumentoSerializer, DocumentoSerializer, DocumentoVersionSerializer, ComentarioDocumentoSerializer, FiltroMetadatosSerializer, TipoDocumentoSerializer
 from .models import Area, Documento, DocumentoVersion, ComentarioDocumento, PermisoDocumento, TipoDocumento, MetadatoPersonalizado
 from usuarios.models import BitacoraUsuario
 from django.db.models import Q
 from django.http import FileResponse, Http404
 from django.shortcuts import get_object_or_404
 import os
+from django.utils.timezone import now, timedelta
 
 #busqueda avanzada
 class DocumentoViewSet(viewsets.ModelViewSet):
@@ -539,3 +540,122 @@ def get_client_ip(request):
     else:
         ip = request.META.get('REMOTE_ADDR')
     return ip
+
+
+@api_view(['GET'])
+@permission_classes([IsAuthenticated])
+def dashboard_view(request):
+    usuario = request.user
+
+    if usuario.organizacion:
+        documentos = Documento.objects.filter(organizacion=usuario.organizacion).prefetch_related('versiones', 'permisos', 'tipo', 'area', 'creado_por')
+        print(documentos)
+    else:
+        print("entro")
+        documentos = Documento.objects.filter(
+            Q(creado_por=usuario) | Q(permisos__usuario=usuario)
+        ).distinct().prefetch_related('versiones', 'permisos', 'tipo', 'area', 'creado_por')
+        print(documentos)
+
+    tipos = TipoDocumento.objects.all()
+    areas = Area.objects.all()
+
+    total_documentos = documentos.count()
+    documentos_publicos = documentos.filter(es_publico=True).count()
+    documentos_privados = total_documentos - documentos_publicos
+    total_versiones = DocumentoVersion.objects.filter(documento__in=documentos).count()
+
+    # Para tendencia: cambio de cantidad de documentos en últimos 30 días vs anteriores 30 días
+    hoy = now().date()
+    hace_30 = hoy - timedelta(days=30)
+    hace_60 = hoy - timedelta(days=60)
+
+    docs_ultimos_30 = documentos.filter(fecha_creacion__gte=hace_30).count()
+    docs_previos_30 = documentos.filter(fecha_creacion__gte=hace_60, fecha_creacion__lt=hace_30).count()
+    documentos_trend = _trend_percent(docs_previos_30, docs_ultimos_30)
+
+    vers_ultimos_30 = DocumentoVersion.objects.filter(documento__in=documentos, fecha_subida__gte=hace_30).count()
+    vers_previos_30 = DocumentoVersion.objects.filter(documento__in=documentos, fecha_subida__gte=hace_60, fecha_subida__lt=hace_30).count()
+    versiones_trend = _trend_percent(vers_previos_30, vers_ultimos_30)
+
+    publicos_trend = _trend_percent(
+        documentos.filter(es_publico=True, fecha_creacion__gte=hace_60, fecha_creacion__lt=hace_30).count(),
+        documentos.filter(es_publico=True, fecha_creacion__gte=hace_30).count()
+    )
+
+    privados_trend = _trend_percent(
+        documentos.filter(es_publico=False, fecha_creacion__gte=hace_60, fecha_creacion__lt=hace_30).count(),
+        documentos.filter(es_publico=False, fecha_creacion__gte=hace_30).count()
+    )
+
+    # Documentos recientes
+    documentos_recientes = documentos.order_by('-fecha_modificacion')[:5]
+    hoy_dt = now()
+    documentos_recientes_data = []
+    for doc in documentos_recientes:
+        dias = (hoy_dt - doc.fecha_modificacion).days
+        doc_serialized = DocumentoSerializer(doc).data
+        doc_serialized['diasDesdeModificacion'] = dias
+        documentos_recientes_data.append(doc_serialized)
+
+    # Actividad reciente (creación y versión)
+    actividad = []
+    for doc in documentos:
+        actividad.append({
+            'id': f'creacion-{doc.id}',
+            'tipo': 'creacion',
+            'titulo': doc.titulo,
+            'usuario': {
+                'id': doc.creado_por.id,
+                'username': doc.creado_por.username
+            },
+            'fecha': doc.fecha_creacion,
+            'descripcion': f'{doc.creado_por.username} creó "{doc.titulo}"',
+            'color': 'var(--color-primary)'
+        })
+        if doc.versiones.count() > 1:
+            ultima_version = doc.versiones.order_by('-version').first()
+            actividad.append({
+                'id': f'version-{ultima_version.id}',
+                'tipo': 'version',
+                'titulo': doc.titulo,
+                'usuario': {
+                    'id': ultima_version.subido_por.id if ultima_version.subido_por else None,
+                    'username': ultima_version.subido_por.username if ultima_version.subido_por else 'Desconocido'
+                },
+                'fecha': ultima_version.fecha_subida,
+                'descripcion': f'{ultima_version.subido_por.username if ultima_version.subido_por else "Alguien"} subió nueva versión de "{doc.titulo}"',
+                'color': 'var(--color-info)'
+            })
+
+    actividad = sorted(actividad, key=lambda x: x['fecha'], reverse=True)[:8]
+
+    # Documentos compartidos
+    documentos_compartidos = documentos.exclude(creado_por=usuario).filter(permisos__usuario=usuario).distinct()[:5]
+
+    return Response({
+        'documentos': DocumentoSerializer(documentos, many=True).data,
+        'tipos_documento': TipoDocumentoSerializer(tipos, many=True).data,
+        'areas': AreaSerializer(areas, many=True).data,
+
+        'total_documentos': total_documentos,
+        'documentos_publicos': documentos_publicos,
+        'documentos_privados': documentos_privados,
+        'total_versiones': total_versiones,
+        'documentos_trend': documentos_trend,
+        'versiones_trend': versiones_trend,
+        'publicos_trend': publicos_trend,
+        'privados_trend': privados_trend,
+
+        'documentos_recientes': documentos_recientes_data,
+        'actividad_reciente': actividad,
+        'documentos_compartidos': DocumentoSerializer(documentos_compartidos, many=True).data,
+    })
+
+
+def _trend_percent(anterior, actual):
+    if anterior == 0 and actual == 0:
+        return 0
+    if anterior == 0:
+        return 100
+    return int(((actual - anterior) / anterior) * 100)
