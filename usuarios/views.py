@@ -5,7 +5,7 @@ from rest_framework import status
 from rest_framework import viewsets
 
 from usuarios.models import Usuario, Rol, Permiso, RolUsuarios, Organizacion, Planes, BitacoraUsuario
-from .serializers import RegistroUsuarioSerializer, LoginSerializer, UsuarioSerializer, PermisoSerializer, RolSerializer, RolUsuariosSerializer, PlanesSerializer, BitacoraUsuarioSerializer
+from .serializers import RegistroUsuarioSerializer, LoginSerializer, UsuarioSerializer, PermisoSerializer, RolSerializer, RolUsuariosSerializer, PlanesSerializer, BitacoraUsuarioSerializer, UsuarioWriteSerializer
 from rest_framework_simplejwt.tokens import RefreshToken
 from drf_yasg.utils import swagger_auto_schema
 from drf_yasg import openapi
@@ -445,4 +445,16 @@ def get_client_ip(request):
         ip = request.META.get('REMOTE_ADDR')
     return ip
 
+@api_view(["PUT"])
+@permission_classes([IsAuthenticated])
+def actualizar_usuario(request, pk):
+    try:
+        usuario = Usuario.objects.get(pk=pk)
+    except Usuario.DoesNotExist:
+        return Response({"error": "Usuario no encontrado."}, status=status.HTTP_404_NOT_FOUND)
 
+    serializer = UsuarioWriteSerializer(usuario, data=request.data)
+    if serializer.is_valid():
+        serializer.save()
+        return Response({"mensaje": "Usuario actualizado correctamente."})
+    return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)

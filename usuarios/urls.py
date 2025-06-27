@@ -25,4 +25,5 @@ urlpatterns = [
     path('asignar-rol/', asignar_usuario_a_rol, name='asignar-usuario-a-rol'),
     path('listar-roles/', listar_roles_organizacion, name='listar-roles-organizacion'),
     path('bitacora/', ver_bitacora),
+    path('<int:pk>/actualizar/', views.actualizar_usuario, name='actualizar-usuario'),
 ]

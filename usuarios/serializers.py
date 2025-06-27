@@ -142,3 +142,27 @@ class BitacoraUsuarioSerializer(serializers.ModelSerializer):
     class Meta:
         model = BitacoraUsuario
         fields = '__all__'
+
+
+class UsuarioWriteSerializer(serializers.ModelSerializer):
+    roles = serializers.PrimaryKeyRelatedField(queryset=Rol.objects.all(), many=True)
+
+    class Meta:
+        model = Usuario
+        fields = ["username", "email", "roles", "es_admin"]
+
+    def update(self, instance, validated_data):
+        roles = validated_data.pop("roles", [])
+
+        # Actualizar campos del usuario
+        for attr, value in validated_data.items():
+            setattr(instance, attr, value)
+        instance.save()
+
+        if roles is not None:
+            # Limpiar y actualizar roles
+            RolUsuarios.objects.filter(usuario=instance).delete()
+            for rol in roles:
+                RolUsuarios.objects.create(usuario=instance, rol=rol)
+
+        return instance
